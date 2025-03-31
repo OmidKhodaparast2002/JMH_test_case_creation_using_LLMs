@@ -1,7 +1,7 @@
 import utils
 from dotenv import load_dotenv
 import os
-import regex
+import time
 
 load_dotenv()
 
@@ -49,11 +49,13 @@ PROJECT_INFO = [
 PROJECTS_PATH = "../projects"
 DATA_COLLECTION_PATH = "../data/collected"
 
+MAX_RETRIES = 5
+
 PROMPT_TEXT_ONE = """You are a senior verification developer. You are an expert in
 writing JMH microbenchmark test cases. You are also an expert analyzing code and writing JMH test cases for it.
 You are proficient in the Java programming language. You are assigned to write an appropriate
 number of JMH microbenchmark test cases to test the performance of the following code module. Please only provide the the benchmark module
-and no explanations:\n\n"""
+and no explanations. You must ignore "Abstract classes" and "Interfaces":\n\n"""
 
 def main():
     if not utils.folder_exists(PROJECTS_PATH):
@@ -65,24 +67,25 @@ def main():
         utils.run_analysis(project, project["analysis_path"])
     
     for project in PROJECT_INFO:
+        tokens = 0
         for module in project["modules"]:
+            print(f"tokens used: {tokens}")
             prompt = PROMPT_TEXT_ONE + module["code"]
-            # Use regex to remove all abstract classes and interfaces from the list of modules
-            if regex.search("abstract class", module["code"]):
-                # Remove the module from the list of modules
-                project["modules"].remove(module)
-                continue
-            if regex.search("interface", module["code"]):
-                # Remove the module from the list of modules
-                project["modules"].remove(module)
-                continue
+            tokens = len(prompt) // 4 + tokens
+            if tokens > 6000:
+                time.sleep(60)
+                tokens = 0
             try:
-                tests = utils.prompt_llm(prompt, GPT_KEY)
+                tests = utils.prompt_llm(prompt, GPT_KEY, MAX_RETRIES)
                 module["test_code"] = tests
+            except utils.APIError as e:
+                print(e)
+                module["test_code"] = "public static void main(String[] args) {throw new Exception(\"Failed to generate tests\");}"
             except Exception as e:
                 print(e)
-                module["test_code"] = "public static void main(String[] args) {throw new UnsupportedOperationException();}"
-
+                module["test_code"] = "public static void main(String[] args) {throw new Exception(\"Module is not testable\");}"
+        break
+    
     for project in PROJECT_INFO:
         if not utils.folder_exists(DATA_COLLECTION_PATH):
             utils.create_folder(DATA_COLLECTION_PATH)
