@@ -1,5 +1,6 @@
 import requests
 import time
+import os
 
 REQUEST_LIMIT_PER_MINUTE = 1000
 TOKEN_LIMIT_PER_MINUTE = 250000
@@ -32,7 +33,7 @@ def prompt_llm(prompt, api_key):
         
     elif response.status_code == 429:
         print(response.text)
-        print("\n\nRate limit hit. Waiting and retrying...")
+        print("Rate limit hit. Waiting and retrying...")
         RateLimitError("Rate limit hit")
 
     else:
@@ -55,6 +56,7 @@ def create_microbenchmarks(projects, prompt_str, api_key):
     for project in projects:
         tokens = 0
         i = 0
+        save_path = project["microbenchmarks_path"]
 
         while i < len(project["modules"]):
             module = project["modules"][i]
@@ -77,8 +79,14 @@ def create_microbenchmarks(projects, prompt_str, api_key):
                 requests = 0
 
             try:
-                tests = prompt_llm(prompt, api_key)
-                module["test_code"] = tests
+                test = prompt_llm(prompt, api_key)
+                module["test_code"] = test
+
+                try:
+                    with open(os.path.join(save_path, module["name"]), "w", encoding="utf-8") as f:
+                        f.write(test)
+                except Exception as e:
+                    print("Error saving code:\n", e)
             except RateLimitError as e:
                 print(e)
                 time.sleep(60)

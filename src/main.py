@@ -9,8 +9,8 @@ def main():
     clone.clone_projects(configs.PROJECTS_PATH, configs.PROJECTS_INFO)
     project_configuration.configure_projects(configs.PROJECTS_INFO, configs.JMH_POM_TEMPLATE)
     static_analysis.run_analysis_on_projects(configs.PROJECTS_INFO)
-    data_collection.write_collected_data_in_json(configs.PROJECTS_INFO, configs.DATA_COLLECTION_PATH)
     # microbenchmarks_creation.create_microbenchmarks(configs.PROJECTS_INFO, configs.PROMPT_ONE, configs.API_KEY)
+    data_collection.write_collected_data_in_json(configs.PROJECTS_INFO, configs.DATA_COLLECTION_PATH)
 
 if __name__ == "__main__":
     main()
