@@ -1,13 +1,14 @@
 import requests
 import time
 import os
+import utils
 
 REQUEST_LIMIT_PER_MINUTE = 1000
 TOKEN_LIMIT_PER_MINUTE = 250000
 SECONDS_PER_MINUTE = 60
 CHARS_PER_TOKEN = 4
 
-def prompt_llm(prompt, api_key):
+def prompt_llm(prompt, api_key, interface_found_str, abstract_found_str):
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
@@ -27,7 +28,13 @@ def prompt_llm(prompt, api_key):
 
         if "```java" in response_message:
             code = response_message.split("```java")[1].split("```")[0]
+            if utils.is_test_code_without_jmh(code):
+                raise NoCodeFoundError("No code found in response")
             return code
+        elif response_message == interface_found_str:
+            return interface_found_str
+        elif response_message == abstract_found_str:
+            return abstract_found_str
         else:
             raise NoCodeFoundError("No code found in response")
         
@@ -40,25 +47,20 @@ def prompt_llm(prompt, api_key):
         print("Error from API:", response.status_code, response.text)
         raise APIError("API Error")
 
-class APIError(Exception):
-    pass
-
-class NoCodeFoundError(Exception):
-    pass
-
-class RateLimitError(Exception):
-    pass
-
-def create_microbenchmarks(projects, prompt_str, api_key):
+def create_microbenchmarks(projects, prompt_str, api_key, interface_found_str, abstract_found_str, no_code_found_str, api_error_str, unknown_error_str, max_retries):
     curr_timestamp = time.time()
     requests = 0
+    retries = 0
 
     for project in projects:
         tokens = 0
         i = 0
         save_path = project["microbenchmarks_path"]
 
+        print(f"Creating microbenchmarks for {project['name']}...")
+
         while i < len(project["modules"]):
+            print(f"creating microbenchmark number {i} out of {len(project['modules'])}...")
             module = project["modules"][i]
             prompt = prompt_str + module["code"]
 
@@ -71,37 +73,58 @@ def create_microbenchmarks(projects, prompt_str, api_key):
             if tokens > TOKEN_LIMIT_PER_MINUTE and time.time() - curr_timestamp < SECONDS_PER_MINUTE:
                 print("TPM exceeded, sleeping for 60 seconds...")
                 time.sleep(60)
+                print("Resuming...")
+                requests = 0
                 tokens = 0
 
             if requests > REQUEST_LIMIT_PER_MINUTE and time.time() - curr_timestamp < SECONDS_PER_MINUTE:
                 print("RPM exceeded, sleeping for 60 seconds...")
                 time.sleep(60)
+                print("Resuming...")
+                tokens = 0
                 requests = 0
 
             try:
-                test = prompt_llm(prompt, api_key)
+                test = prompt_llm(prompt, api_key, interface_found_str, abstract_found_str)
                 module["test_code"] = test
-
-                try:
-                    with open(os.path.join(save_path, module["name"]), "w", encoding="utf-8") as f:
-                        f.write(test)
-                except Exception as e:
-                    print("Error saving code:\n", e)
             except RateLimitError as e:
                 print(e)
                 time.sleep(60)
-                i -= 1
+                continue
 
             except NoCodeFoundError as e:
                 print(e)
-                module["test_code"] = "Code not found"
+                module["test_code"] = no_code_found_str
 
             except APIError as e:
                 print(e)
-                module["test_code"] = "API error"
+                print(f"API error, retrying...")
+                if retries < max_retries:
+                    retries += 1
+                    print(f"Retrying {retries}/{max_retries}...")
+                    continue
+                else:
+                    module["test_code"] = api_error_str
+                    retries = 0
 
             except Exception as e:
                 print(e)
-                module["test_code"] = "Error"
+                module["test_code"] = unknown_error_str
+
+            try:
+                with open(os.path.join(save_path, module["name"]), "w", encoding="utf-8") as f:
+                    f.write(module["test_code"])
+            except Exception as e:
+                print("Error saving code:\n", e)
 
             i += 1
+            retries = 0
+
+class APIError(Exception):
+    pass
+
+class NoCodeFoundError(Exception):
+    pass
+
+class RateLimitError(Exception):
+    pass

@@ -6,7 +6,12 @@ def configure_pom(parent_pom_path, child_pom_str, project_root_path):
     xmlns = "http://maven.apache.org/POM/4.0.0"
     namespace = f"{{{xmlns}}}"
 
-    parent_tree = ET.parse(parent_pom_path)
+    try:
+        parent_tree = ET.parse(parent_pom_path)
+    except Exception as e:
+        print("Failed to parse parent POM:", e)
+        exit(1)
+    
     parent_root = parent_tree.getroot()
 
     child_root = ET.fromstring(child_pom_str)
@@ -91,7 +96,11 @@ def configure_pom(parent_pom_path, child_pom_str, project_root_path):
         print("Failed to create folders:", e)
 
     # Write parent changes back to file
-    parent_tree.write(parent_pom_path, encoding="utf-8", xml_declaration=True)
+    ET.register_namespace("", "http://maven.apache.org/POM/4.0.0")
+    try:
+        parent_tree.write(parent_pom_path, encoding="utf-8", xml_declaration=True)
+    except Exception as e:
+        print("Failed to write parent POM:", e)
 
     # Write child pom to the given path
     try:
@@ -117,19 +126,23 @@ def configure_gradle_project(project_root_path, jmh_module_name="generated_jmh")
         include_block = []
         collecting = False
 
-        with open(settings_path, "r") as f:
-            for line in f:
-                stripped = line.strip().split("//")[0]  # Remove inline comments
+        try:
+            with open(settings_path, "r") as f:
+                for line in f:
+                    stripped = line.strip().split("//")[0]  # Remove inline comments
 
-                if stripped.startswith("include"):
-                    collecting = True
-                    include_block.append(stripped)
-                    if ")" in stripped or "," not in stripped:
-                        collecting = False
-                elif collecting:
-                    include_block.append(stripped)
-                    if ")" in stripped:
-                        collecting = False
+                    if stripped.startswith("include"):
+                        collecting = True
+                        include_block.append(stripped)
+                        if ")" in stripped or "," not in stripped:
+                            collecting = False
+                    elif collecting:
+                        include_block.append(stripped)
+                        if ")" in stripped:
+                            collecting = False
+        except Exception as e:
+            print(f"Failed to read {settings_path}: {e}")
+            exit(1)
 
         # Join all collected lines into one string and extract quoted module names
         include_text = " ".join(include_block)
@@ -138,15 +151,19 @@ def configure_gradle_project(project_root_path, jmh_module_name="generated_jmh")
         included_modules = [f":{m}" if not m.startswith(":") else m for m in found]
 
     # Fallback for single-module projects (no includes)
-    if not included_modules:
+    if not included_modules or (len(included_modules) == 1 and included_modules[0] == f":{jmh_module_name}"):
         print("No includes found in settings.gradle, assuming single-module project.")
         included_modules = [":"]
 
     # Step 2: Append `include(":generated-jmh")` if not present
     if f":{jmh_module_name}" not in included_modules:
-        with open(settings_path, "a") as f:
-            f.write(f'\ninclude(":{jmh_module_name}")\n')
-        print(f"Added :{jmh_module_name} to settings.gradle")
+        try:
+            with open(settings_path, "a") as f:
+                f.write(f'\ninclude(":{jmh_module_name}")\n')
+            print(f"Added :{jmh_module_name} to settings.gradle")
+        except Exception as e:
+            print(f"Failed to append :{jmh_module_name} to settings.gradle: {e}")
+            exit(1)
 
     # Step 3: Filter out the generated module itself
     main_modules = [m for m in included_modules if m != f":{jmh_module_name}"]
@@ -176,8 +193,12 @@ java {{
 }}
 """.strip()
 
-    with open(build_gradle_path, "w") as f:
-        f.write(gradle_script)
+    try:
+        with open(build_gradle_path, "w") as f:
+            f.write(gradle_script)
+    except Exception as e:
+        print(f"Failed to write {build_gradle_path}: {e}")
+        exit(1)
 
     print(f"Wrote {build_gradle_path} with dependencies from {len(main_modules)} modules.")
 

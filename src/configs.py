@@ -196,14 +196,22 @@ PROJECTS_INFO = [
     }
 ]
 
-PROJECTS_PATH = "../projects"
-DATA_COLLECTION_PATH = "../data/collected"
-FOLDER_TO_SAVE_MICROBENCHMARKS = "/generated_microbenchmarks"
-
+PROJECTS_PATH = os.path.join("..", "projects")
+DATA_COLLECTION_PATH = os.path.join("..", "data", "collected")
+FOLDER_NAME_TO_SAVE_MICROBENCHMARKS = "generated_jmh"
+CODE_NOT_GENERATED = "Code not generated"
+INTERFACE_FOUND = "Interface found"
+ABSTRACT_CLASS_FOUND = "Abstract class found"
+UNKNOWN_ERROR = "Unknown error"
+API_ERROR = "API error"
+PROJECT_NAMES = [project["name"] for project in PROJECTS_INFO]
 MAX_RETRIES = 5
 
-PROMPT_ONE = """You are a senior verification developer. You are an expert in
+PROMPT_ONE = f"""You are a senior verification developer. You are an expert in
 writing JMH microbenchmark test cases. You are also an expert analyzing code and writing JMH test cases for it.
 You are proficient in the Java programming language. You are assigned to write an appropriate
 number of JMH microbenchmark test cases to test the performance of the following code module. Please only provide the the benchmark module
-and no explanations. You must ignore "Abstract classes" and "Interfaces":\n\n"""
+and no explanations. You must ignore "Abstract classes" by returning "{ABSTRACT_CLASS_FOUND}" as output. 
+You must ignore "interfaces" by returning "{INTERFACE_FOUND}" as output.
+
+Here is the code:\n\n"""
