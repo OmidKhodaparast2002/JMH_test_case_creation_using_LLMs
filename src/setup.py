@@ -14,6 +14,10 @@ import ollama
 import requests
 import json
 from pathlib import Path
+from typing import List
+import subprocess
+import os
+import re
 
 def check_model_connvectivity(model_url:str, model_name:str) -> bool:
     """
@@ -47,8 +51,45 @@ def check_model_connvectivity(model_url:str, model_name:str) -> bool:
         return False
 
 
-def clone_projects(links, destination: Path):
-    return
+def clone_projects(proj_links: List[str], dest_folder: Path):
+    """Clones a list of Git repositories to a destination folder.
+
+    Args:
+        proj_links: A list of Git repository URLs.
+        dest_folder: The destination directory where repositories should be cloned.
+    """
+
+    # If the destination folder does not exist we create it otherwise it will be left as it is.
+    os.makedirs(dest_folder, exist_ok=True) 
+
+    try:
+        for link in proj_links:
+            # Extract the repository name from the URL and wrapping it inside a Path object.
+            repo_name = Path(re.search(r"/([^/]+?)(?:\.git)?$", link).group(1)) # regex to get repo name
+            
+            # Add the repo path to the repos folder.
+            repo_path = dest_folder / repo_name
+
+            # if repo exists skip cloning.
+            if(os.path.isdir(repo_path)):
+                continue
+
+            subprocess.run(['git', 'clone', link, repo_path]) # Cloning into the repo folder
+
+        print("All projects were cloned successfully.")
+    except FileNotFoundError as exc: 
+        print(f"Process failed because the executable could not be found.\n{exc}")
+        exit(1)
+    except subprocess.CalledProcessError as exc:
+        print(
+        f"Cloning failed because did not return a successful return code. "
+        f"Returned {exc.returncode}\n{exc}"
+        )
+    except Exception as exc:
+        print(f"An unexpected error occurred during cloning:\n{exc}")
+        exit(1)
+
+
 
 def load_projects(path):
     return
@@ -64,4 +105,5 @@ def setup():
 
 # Example usage
 if __name__ == "__main__": 
-    check_model_connvectivity(model_url='http://127.0.0.1:11434', model_name='gemma:2b')
+    LLM_available = check_model_connvectivity(model_url='http://127.0.0.1:11434', model_name='gemma:2b')
+    clone_projects(['git@github.com:amirpooya78/Titanic-cmp-kaggle.git', 'git@github.com:amirpooya78/Housing-Prices-Competition-for-Kaggle-Learn-Users.git'], Path('./projects'))
