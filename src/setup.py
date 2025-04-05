@@ -93,8 +93,38 @@ def clone_projects(proj_links: List[str], dest_folder: Path):
 
 
 
-def load_projects(path):
-    return
+def prep_projects_modules(project_data: dict) -> dict:
+
+    """
+    This function finds all java files and fill the modules attribute of each project with
+    paths to the java files inside in given analysis directory and subdirectories witihin it.
+
+    Args:
+        project_data: dict , project data coming from serialized json file
+
+    Returns: 
+        project_data: dict , filled modules attribute of each project with path of java files
+        inside the anaylis path of the project
+    """
+
+    for project in project_data["projects"]:
+        # Get the absolute path of each projest analysis path 
+        analysis_path = Path(project["analysis_path"]).resolve()
+
+        # check for if given analysis path is a valid directory
+        if(os.path.isdir(analysis_path)):
+
+            # recursively search for all java files in the analysis path
+            java_files = list(analysis_path.rglob("*.java")) 
+
+            # Save java files to modules attribute of each project
+            project["modules"] = [str(f) for f in java_files] # stringify it for being a serializable json
+
+            
+        else:
+            print(f"Given analysis path is not a directory for given project: {project['name']}")
+
+    return project_data
 
 
 def rmv_proj_comments():
@@ -107,11 +137,14 @@ def setup():
 
 # Example usage
 if __name__ == "__main__": 
-    #LLM_available = check_model_connvectivity(model_url='http://127.0.0.1:11434', model_name='gemma:2b')
+    LLM_available = check_model_connvectivity(model_url='http://127.0.0.1:11434', model_name='gemma:2b')
     
-
     project_data = read_json(Path('./src/projects.json'))
     project_urls = [project["ssh_url"] for project in project_data["projects"]]
-
+    
     
     clone_projects(project_urls, Path('./projects'))
+
+    project_data = prep_projects_modules(project_data)
+
+    #print(json.dumps(project_data, indent=4))
