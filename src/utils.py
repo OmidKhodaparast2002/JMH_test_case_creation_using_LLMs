@@ -3,6 +3,7 @@ import os
 import json
 import requests
 import time
+from pathlib import Path
 
 def folder_exists(folder_path):
     return os.path.exists(folder_path)
@@ -68,3 +69,10 @@ def prompt_llm(prompt, api_key, max_retries):
 
 class APIError(Exception):
     pass
+
+
+def read_json(path: Path):
+    with open(path, 'r') as f:
+        data = json.load(f)
+
+    return data

@@ -18,6 +18,8 @@ from typing import List
 import subprocess
 import os
 import re
+import json
+from utils import read_json
 
 def check_model_connvectivity(model_url:str, model_name:str) -> bool:
     """
@@ -105,5 +107,11 @@ def setup():
 
 # Example usage
 if __name__ == "__main__": 
-    LLM_available = check_model_connvectivity(model_url='http://127.0.0.1:11434', model_name='gemma:2b')
-    clone_projects(['git@github.com:amirpooya78/Titanic-cmp-kaggle.git', 'git@github.com:amirpooya78/Housing-Prices-Competition-for-Kaggle-Learn-Users.git'], Path('./projects'))
+    #LLM_available = check_model_connvectivity(model_url='http://127.0.0.1:11434', model_name='gemma:2b')
+    
+
+    project_data = read_json(Path('./src/projects.json'))
+    project_urls = [project["ssh_url"] for project in project_data["projects"]]
+
+    
+    clone_projects(project_urls, Path('./projects'))
