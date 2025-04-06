@@ -21,39 +21,33 @@ import re
 import json
 from utils import read_json
 
-def check_model_connvectivity(model_url:str, model_name:str) -> bool:
+def check_model_connectivity(model_url: str, model_name: str) -> bool:
     """
-    This function checks the conncetivity to the LLM
+    Check if the given model is actually available and ready to generate output.
 
-    params:
-        url: URL to the model
-
-    returns:
-        True (if model is available)
-        False (if model is not available)
+    Uses /api/generate with stream=false to confirm model is working.
     """
     try:
-        url = f"{model_url}/api/tags"
-        
-        response = requests.get(url)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+        url = f"{model_url}/api/generate"
+        response = requests.post(url, json={
+            "model": model_name,
+            "prompt": "Hello",
+            "stream": False
+        })
 
-        data = response.json()
-        for model in data.get("models", []):
-            if model["name"] == model_name:
-                return True
-                
-        return False
-    
+        if response.status_code == 200:
+            print("✅ Model is loaded and generating.")
+            return True
+        else:
+            print(f"❌ Model returned unexpected status: {response.status_code}")
+            return False
+
     except requests.exceptions.RequestException as e:
-        print(f"Error checking Ollama availability: {e}")
-        return False
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON response: {e}")
+        print(f"❌ Request error while checking model: {e}")
         return False
 
 
-def clone_projects(proj_links: List[str], dest_folder: Path):
+def clone_projects(project_data: dict, dest_folder: Path):
     """Clones a list of Git repositories to a destination folder.
 
     Args:
@@ -64,10 +58,12 @@ def clone_projects(proj_links: List[str], dest_folder: Path):
     # If the destination folder does not exist we create it otherwise it will be left as it is.
     os.makedirs(dest_folder, exist_ok=True) 
 
+    project_urls = [project["ssh_url"] for project in project_data["projects"]]
+
     try:
-        for link in proj_links:
+        for url in project_urls:
             # Extract the repository name from the URL and wrapping it inside a Path object.
-            repo_name = Path(re.search(r"/([^/]+?)(?:\.git)?$", link).group(1)) # regex to get repo name
+            repo_name = Path(re.search(r"/([^/]+?)(?:\.git)?$", url).group(1)) # regex to get repo name
             
             # Add the repo path to the repos folder.
             repo_path = dest_folder / repo_name
@@ -76,7 +72,7 @@ def clone_projects(proj_links: List[str], dest_folder: Path):
             if(os.path.isdir(repo_path)):
                 continue
 
-            subprocess.run(['git', 'clone', link, repo_path]) # Cloning into the repo folder
+            subprocess.run(['git', 'clone', url, repo_path]) # Cloning into the repo folder
 
         print("All projects were cloned successfully.")
     except FileNotFoundError as exc: 
@@ -159,21 +155,33 @@ def rmv_proj_comments(project_data: dict) -> dict:
 
 
 
-def setup():
-    return
+def setup(model_url:str, model_name:str, project_data:dict) -> dict:
+    """
+    setup pipeline includes all the steps that are needed to be taken before generation pipeline
+    such as:
+        * checking the connectivity to the LLM,
+        * cloning the projects
+        * Loading the modules path for each projects that will be used for JMH generation
+        * clearing comments from the modules 
+    """
+    LLM_available = check_model_connectivity(model_url, model_name)
 
-
-# Example usage
-if __name__ == "__main__": 
-    LLM_available = check_model_connvectivity(model_url='http://127.0.0.1:11434', model_name='gemma:2b')
+    if(not LLM_available):
+        raise Exception(f'model: {model_name} {model_url} is not available')
     
-    project_data = read_json(Path('./src/projects.json'))
-    project_urls = [project["ssh_url"] for project in project_data["projects"]]
-    
-    clone_projects(project_urls, Path('./projects'))
+    clone_projects(project_data, Path('./projects'))
 
     project_data = prep_projects_modules(project_data)
 
     project_data = rmv_proj_comments(project_data)
 
-    #print(json.dumps(project_data, indent=4))
+    return project_data
+
+
+# Example usage
+if __name__ == "__main__": 
+    
+    project_data = read_json(Path('./src/projects.json').resolve())
+
+    project_data = setup(model_url='http://127.0.0.1:11434', model_name='gemma:2b', project_data=project_data)
+
