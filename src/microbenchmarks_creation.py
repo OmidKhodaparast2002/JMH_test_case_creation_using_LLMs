@@ -55,7 +55,6 @@ def create_microbenchmarks(projects, prompt_str, api_key, interface_found_str, a
     for project in projects:
         tokens = 0
         i = 0
-        save_path = project["microbenchmarks_path"]
 
         print(f"Creating microbenchmarks for {project['name']}...")
 
@@ -110,12 +109,6 @@ def create_microbenchmarks(projects, prompt_str, api_key, interface_found_str, a
             except Exception as e:
                 print(e)
                 module["test_code"] = unknown_error_str
-
-            try:
-                with open(os.path.join(save_path, module["name"]), "w", encoding="utf-8") as f:
-                    f.write(module["test_code"])
-            except Exception as e:
-                print("Error saving code:\n", e)
 
             i += 1
             retries = 0

@@ -29,9 +29,9 @@ def read_projects(path, project_names):
 
     return projects
 
-def is_test_code_without_jmh(tes_code):
+def is_test_code_without_jmh(code):
 
-    tes_code = tes_code.strip().lower()
+    tes_code = code.strip().lower()
 
     # Skip if no code was generated
     if not tes_code:

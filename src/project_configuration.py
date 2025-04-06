@@ -2,7 +2,7 @@ import os
 import xml.etree.ElementTree as ET
 import re
 
-def configure_pom(parent_pom_path, child_pom_str, project_root_path):
+def configure_pom(parent_pom_path, child_pom_str, project_root_path, dependency_list):
     xmlns = "http://maven.apache.org/POM/4.0.0"
     namespace = f"{{{xmlns}}}"
 
@@ -46,31 +46,30 @@ def configure_pom(parent_pom_path, child_pom_str, project_root_path):
     child_parent_version_el = ET.SubElement(child_parent_el, namespace + "version")
     child_parent_version_el.text = parent_version.text
 
+    # Compute relative path from child to parent
+    child_pom_path = os.path.join(project_root_path, child_artifact_id, "pom.xml")
+    rel_path = os.path.relpath(os.path.dirname(parent_pom_path), os.path.dirname(child_pom_path))
+
+    child_parent_relative_path_el = ET.SubElement(child_parent_el, namespace + "relativePath")
+    child_parent_relative_path_el.text = rel_path
+
     # Add parent as dependency to child
     child_dependencies_el = child_root.find(namespace + "dependencies")
     if child_dependencies_el is None:
         child_dependencies_el = ET.SubElement(child_root, namespace + "dependencies")
 
-    child_dependency_el = ET.SubElement(child_dependencies_el, namespace + "dependency")
-    child_dependency_groupId_el = ET.SubElement(child_dependency_el, namespace + "groupId")
-    child_dependency_groupId_el.text = parent_group_id.text
-    child_dependency_artifactId_el = ET.SubElement(child_dependency_el, namespace + "artifactId")
-    child_dependency_artifactId_el.text = parent_artifact_id.text
-    child_dependency_version_el = ET.SubElement(child_dependency_el, namespace + "version")
-    child_dependency_version_el.text = parent_version.text
+    for dependency in dependency_list:
+        child_dependency_el = ET.SubElement(child_dependencies_el, namespace + "dependency")
+        child_dependency_groupId_el = ET.SubElement(child_dependency_el, namespace + "groupId")
+        child_dependency_groupId_el.text = dependency["groupId"]
+        child_dependency_artifactId_el = ET.SubElement(child_dependency_el, namespace + "artifactId")
+        child_dependency_artifactId_el.text = dependency["artifactId"]
+        child_dependency_version_el = ET.SubElement(child_dependency_el, namespace + "version")
+        child_dependency_version_el.text = dependency["version"]
 
     child_artifactId_el = child_root.find(namespace + "artifactId")
     if child_artifactId_el is None:
         raise Exception("Failed to find artifactId in child POM")
-    
-    # Add child to modules in parent
-    parent_modules_el = parent_root.find(namespace + "modules")
-    if parent_modules_el is None:
-        parent_modules_el = ET.SubElement(parent_root, namespace + "modules")
-
-    if not any(mod.text == child_artifactId_el.text for mod in parent_modules_el.findall(namespace + "module")):
-        child_module_el = ET.SubElement(parent_modules_el, namespace + "module")
-        child_module_el.text = child_artifactId_el.text
 
     ET.indent(parent_root, space="  ")
     ET.indent(child_root, space="  ")
@@ -208,6 +207,7 @@ def configure_projects(projects, pom_str):
     for project in projects:
         print(f"configuring {project['name']}")
         if project["has_maven"]:
-            project["microbenchmarks_path"] = configure_pom(project["parent_pom_path"], pom_str, project["root_path"])
+            dependency_list = project.get("dependency_list", [])
+            project["microbenchmarks_path"] = configure_pom(project["parent_pom_path"], pom_str, project["root_path"], dependency_list)
         else:
             project["microbenchmarks_path"] = configure_gradle_project(project["root_path"])

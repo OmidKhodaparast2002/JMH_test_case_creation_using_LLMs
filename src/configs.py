@@ -47,6 +47,7 @@ JMH_POM_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
     </dependencies>
 
     <build>
+        <sourceDirectory>src/jmh/java</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -147,7 +148,19 @@ PROJECTS_INFO = [
         "analysis_path": os.path.join("..", "projects", "logging-log4j2", "log4j-core", "src", "main", "java", "org", "apache", "logging", "log4j", "core"),
         "modules": [],
         "has_maven": True,
-        "parent_pom_path": os.path.join("..", "projects", "logging-log4j2", "log4j-parent", "pom.xml")
+        "parent_pom_path": os.path.join("..", "projects", "logging-log4j2", "log4j-parent", "pom.xml"),
+        "dependency_list": [
+            {
+                "artifactId": "log4j-core",
+                "groupId": "org.apache.logging.log4j",
+                "version": "${revision}"
+            },
+            {
+                "artifactId": "log4j-api",
+                "groupId": "org.apache.logging.log4j",
+                "version": "${revision}"
+            }
+        ]
     },
     {
         "name": "kafka",
@@ -183,7 +196,19 @@ PROJECTS_INFO = [
         "analysis_path": os.path.join("..", "projects", "gson", "gson", "src", "main", "java", "com", "google", "gson"),
         "modules": [],
         "has_maven": True,
-        "parent_pom_path": os.path.join("..", "projects", "gson", "pom.xml")
+        "parent_pom_path": os.path.join("..", "projects", "gson", "pom.xml"),
+        "dependency_list": [
+            {
+                "artifactId": "proguard-core",
+                "groupId": "com.guardsquare",
+                "version": "9.1.9"
+            },
+            {
+                "artifactId": "proguard-base",
+                "groupId": "com.guardsquare",
+                "version": "7.6.1"
+            }
+        ]
     },
     {
         "name": "jjwt",
@@ -198,7 +223,7 @@ PROJECTS_INFO = [
 
 PROJECTS_PATH = os.path.join("..", "projects")
 DATA_COLLECTION_PATH = os.path.join("..", "data", "collected")
-FOLDER_NAME_TO_SAVE_MICROBENCHMARKS = "generated_jmh"
+GENERATED_MICROBENCHMARKS_DIR = "generated_jmh"
 CODE_NOT_GENERATED = "Code not generated"
 INTERFACE_FOUND = "Interface found"
 ABSTRACT_CLASS_FOUND = "Abstract class found"
