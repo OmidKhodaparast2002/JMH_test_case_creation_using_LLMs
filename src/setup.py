@@ -127,8 +127,36 @@ def prep_projects_modules(project_data: dict) -> dict:
     return project_data
 
 
-def rmv_proj_comments():
-    return
+def rmv_proj_comments(project_data: dict) -> dict:
+    # Regex pattern to match single-line and multi-line comments
+    comment_pattern = re.compile(
+        r'//.*?$|/\*.*?\*/',
+        re.DOTALL | re.MULTILINE
+    )
+
+    for project in project_data['projects']:
+
+        file_paths = project['modules']
+
+        for path in file_paths:
+            try:
+                with open(path, 'r', encoding='utf-8') as file:
+                    code = file.read()
+
+                # Remove comments using regex
+                cleaned_code = re.sub(comment_pattern, '', code)
+
+                # Optionally, remove trailing whitespaces on each line
+                cleaned_code = '\n'.join(line.rstrip() for line in cleaned_code.splitlines())
+
+                # Write the cleaned code back to the file
+                with open(path, 'w', encoding='utf-8') as file:
+                    file.write(cleaned_code)
+
+                print(f"Cleaned comments from: {path}")
+            except Exception as e:
+                print(f"Failed to process {path}: {e}")
+
 
 
 def setup():
@@ -142,9 +170,10 @@ if __name__ == "__main__":
     project_data = read_json(Path('./src/projects.json'))
     project_urls = [project["ssh_url"] for project in project_data["projects"]]
     
-    
     clone_projects(project_urls, Path('./projects'))
 
     project_data = prep_projects_modules(project_data)
+
+    project_data = rmv_proj_comments(project_data)
 
     #print(json.dumps(project_data, indent=4))
