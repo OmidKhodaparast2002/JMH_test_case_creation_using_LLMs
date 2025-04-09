@@ -3,7 +3,8 @@ import os
 
 load_dotenv()
 
-JMH_POM_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
+GENERATED_MICROBENCHMARKS_DIR = "generated_jmh"
+JMH_POM_TEMPLATE = f"""<?xml version="1.0" encoding="UTF-8"?>
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
@@ -23,20 +24,19 @@ JMH_POM_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jmh.version>1.13</jmh.version>
-        <javac.target>21</javac.target>
-        <uberjar.name>benchmarks</uberjar.name>
+        <uberjar.name>{GENERATED_MICROBENCHMARKS_DIR}</uberjar.name>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-core</artifactId>
-            <version>${jmh.version}</version>
+            <version>${{jmh.version}}</version>
         </dependency>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-generator-annprocess</artifactId>
-            <version>${jmh.version}</version>
+            <version>${{jmh.version}}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -54,9 +54,9 @@ JMH_POM_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.1</version>
                 <configuration>
-                    <compilerVersion>${javac.target}</compilerVersion>
-                    <source>${javac.target}</source>
-                    <target>${javac.target}</target>
+                    <compilerVersion>${{javac.target}}</compilerVersion>
+                    <source>${{javac.target}}</source>
+                    <target>${{javac.target}}</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -70,7 +70,7 @@ JMH_POM_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>${uberjar.name}</finalName>
+                            <finalName>${{uberjar.name}}</finalName>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.openjdk.jmh.Main</mainClass>
@@ -160,16 +160,18 @@ PROJECTS_INFO = [
                 "groupId": "org.apache.logging.log4j",
                 "version": "${revision}"
             }
-        ]
+        ],
+        "java_version": "17.0.14-tem"
     },
     {
         "name": "kafka",
         "ssh_url": "git@github.com:apache/kafka.git",
         "root_path": os.path.join("..", "projects", "kafka"),
-        "analysis_path": os.path.join("..", "projects", "kafka", "core", "src", "main", "java", "kafka", "server"),
+        "analysis_path": os.path.join("..", "projects", "kafka", "clients", "src", "main", "java", "org", "apache", "kafka"),
         "has_maven": False,
         "modules": [],
-        "gradle_settings_path": os.path.join("..", "projects", "kafka", "settings.gradle")
+        "gradle_settings_path": os.path.join("..", "projects", "kafka", "settings.gradle"),
+        "java_version": "17.0.14-tem"
     },
     {
         "name": "RxJava",
@@ -178,7 +180,8 @@ PROJECTS_INFO = [
         "analysis_path": os.path.join("..", "projects", "RxJava", "src", "main", "java", "io", "reactivex", "rxjava3"),
         "has_maven": False,
         "modules": [],
-        "gradle_settings_path": os.path.join("..", "projects", "RxJava", "settings.gradle")
+        "gradle_settings_path": os.path.join("..", "projects", "RxJava", "settings.gradle"),
+        "java_version": "8.0.442-tem"
     },
     {
         "name": "Java",
@@ -187,7 +190,20 @@ PROJECTS_INFO = [
         "analysis_path": os.path.join("..", "projects", "Java", "src", "main", "java", "com", "thealgorithms"),
         "modules": [],
         "has_maven": True,
-        "parent_pom_path": os.path.join("..", "projects", "Java", "pom.xml")
+        "parent_pom_path": os.path.join("..", "projects", "Java", "pom.xml"),
+        "dependency_list": [
+            {
+                "artifactId": "commons-lang3",
+                "groupId": "org.apache.commons",
+                "version": "3.17.0"
+            },
+            {
+                "artifactId": "commons-collections4",
+                "groupId": "org.apache.commons",
+                "version": "4.5.0-M3"
+            }
+        ],
+        "java_version": "21.0.6-tem"
     },
     {
         "name": "gson",
@@ -208,7 +224,8 @@ PROJECTS_INFO = [
                 "groupId": "com.guardsquare",
                 "version": "7.6.1"
             }
-        ]
+        ],
+        "java_version": "17.0.14-tem"
     },
     {
         "name": "jjwt",
@@ -217,13 +234,20 @@ PROJECTS_INFO = [
         "analysis_path": os.path.join("..", "projects", "jjwt", "impl", "src", "main", "java", "io", "jsonwebtoken", "impl"),
         "modules": [],
         "has_maven": True,
-        "parent_pom_path": os.path.join("..", "projects", "jjwt", "pom.xml")
+        "parent_pom_path": os.path.join("..", "projects", "jjwt", "pom.xml"),
+        "dependency_list": [
+            {
+                "artifactId": "jjwt-api",
+                "groupId": "io.jsonwebtoken",
+                "version": "0.12.7-SNAPSHOT"
+            },
+        ],
+        "java_version": "17.0.14-tem"
     }
 ]
 
 PROJECTS_PATH = os.path.join("..", "projects")
 DATA_COLLECTION_PATH = os.path.join("..", "data", "collected")
-GENERATED_MICROBENCHMARKS_DIR = "generated_jmh"
 CODE_NOT_GENERATED = "Code not generated"
 INTERFACE_FOUND = "Interface found"
 ABSTRACT_CLASS_FOUND = "Abstract class found"

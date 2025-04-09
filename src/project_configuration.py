@@ -2,7 +2,7 @@ import os
 import xml.etree.ElementTree as ET
 import re
 
-def configure_pom(parent_pom_path, child_pom_str, project_root_path, dependency_list):
+def configure_pom(parent_pom_path, child_pom_str, project_root_path, dependency_list, java_version):
     xmlns = "http://maven.apache.org/POM/4.0.0"
     namespace = f"{{{xmlns}}}"
 
@@ -18,6 +18,13 @@ def configure_pom(parent_pom_path, child_pom_str, project_root_path, dependency_
 
     if parent_root is None:
         raise Exception("Failed to parse parent POM")
+    
+    # Set parent packaging to pom for single pom projects
+    parent_modules_el = parent_root.find(namespace + "modules")
+    if parent_modules_el is not None:
+        parent_packaging_el = parent_root.find(namespace + "packaging")
+        if parent_packaging_el is not None:
+            parent_packaging_el.text = "pom"
 
     parent_group_id = parent_root.find(namespace + "groupId")
     parent_artifact_id = parent_root.find(namespace + "artifactId")
@@ -64,12 +71,21 @@ def configure_pom(parent_pom_path, child_pom_str, project_root_path, dependency_
         child_dependency_groupId_el.text = dependency["groupId"]
         child_dependency_artifactId_el = ET.SubElement(child_dependency_el, namespace + "artifactId")
         child_dependency_artifactId_el.text = dependency["artifactId"]
-        child_dependency_version_el = ET.SubElement(child_dependency_el, namespace + "version")
-        child_dependency_version_el.text = dependency["version"]
+        if dependency.get("version", None) is not None:
+            child_dependency_version_el = ET.SubElement(child_dependency_el, namespace + "version")
+            child_dependency_version_el.text = dependency["version"]
 
     child_artifactId_el = child_root.find(namespace + "artifactId")
     if child_artifactId_el is None:
         raise Exception("Failed to find artifactId in child POM")
+    
+    # Add javac.target to properties tag
+    child_properties_el = child_root.find(namespace + "properties")
+    if child_properties_el is None:
+        child_properties_el = ET.SubElement(child_root, namespace + "properties")
+
+    child_javac_target_el = ET.SubElement(child_properties_el, namespace + "javac.target")
+    child_javac_target_el.text = java_version
 
     ET.indent(parent_root, space="  ")
     ET.indent(child_root, space="  ")
@@ -110,7 +126,7 @@ def configure_pom(parent_pom_path, child_pom_str, project_root_path, dependency_
 
     return full_path
 
-def configure_gradle_project(project_root_path, jmh_module_name="generated_jmh"):
+def configure_gradle_project(project_root_path, jmh_module_name, java_version):
     settings_path = os.path.join(project_root_path, "settings.gradle")
     build_dir = os.path.join(project_root_path, jmh_module_name)
     build_gradle_path = os.path.join(build_dir, "build.gradle")
@@ -149,6 +165,19 @@ def configure_gradle_project(project_root_path, jmh_module_name="generated_jmh")
 
         included_modules = [f":{m}" if not m.startswith(":") else m for m in found]
 
+    else:
+        print(f"Failed to find settings.gradle in {project_root_path}")
+        exit(1)
+    
+    # For kafka we need to not consider some dep_lines
+    if "kafka" in project_root_path:
+        try:
+            included_modules.remove(":storage:api")
+            included_modules.remove(":storage:api")
+            included_modules.remove(":storage-api")
+        except ValueError:
+            print(":storage:api not found in included_modules")
+
     # Fallback for single-module projects (no includes)
     if not included_modules or (len(included_modules) == 1 and included_modules[0] == f":{jmh_module_name}"):
         print("No includes found in settings.gradle, assuming single-module project.")
@@ -170,6 +199,10 @@ def configure_gradle_project(project_root_path, jmh_module_name="generated_jmh")
     # Step 4: Write build.gradle for generated-jmh
     dep_lines = "\n".join(f'    implementation project("{m}")' for m in main_modules)
 
+    java_version_line = (
+        f"JavaVersion.VERSION_1_8" if java_version == "8" else f"JavaVersion.toVersion({java_version})"
+    )
+
     gradle_script = f"""
 plugins {{
     id 'java'
@@ -184,11 +217,20 @@ dependencies {{
 {dep_lines}
     jmh 'org.openjdk.jmh:jmh-core:1.37'
     jmh 'org.openjdk.jmh:jmh-generator-annprocess:1.37'
+    jmh 'org.openjdk.jmh:jmh-generator-bytecode:1.37'
+}}
+
+sourceSets {{
+    jmh {{
+        java {{
+            srcDirs = ['src/jmh/java']
+        }}
+    }}
 }}
 
 java {{
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = {java_version_line}
+    targetCompatibility = {java_version_line}
 }}
 """.strip()
 
