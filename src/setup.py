@@ -153,6 +153,8 @@ def rmv_proj_comments(project_data: dict) -> dict:
             except Exception as e:
                 print(f"Failed to process {path}: {e}")
 
+    return project_data
+
 
 
 def setup(model_url:str, model_name:str, project_data:dict) -> dict:
