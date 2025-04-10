@@ -2,9 +2,6 @@ from pathlib import Path
 from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from pydantic import BaseModel, Field
-from typing import Optional
-
 
 ######################### DELETE THESE IMPORTS #############################
 from utils import read_json
@@ -12,47 +9,35 @@ from setup import setup
 
 ############################################################################
 
-
 output_schema = {
     "title": "JMH Benchmark",
     "type": "object",
     "properties": {
-        "module": {
+        "Benchmark_code": {
             "type": "string",
-            "description": "The path to the Java module that needs benchmarking",
-        },
-        "JMH_code": {
-            "type": "string",
-            "description": "The generated Java code for benchmarking the module using the JMH framework",
+            "description": "The generated benchmark code for the given module using the JMH framework",
         },
     },
-    "required": ["module", "JMH_code"],
+    "required": ["Benchmark code"],
 }
 
 
-def prompt_llm(template: str, module_data: object) -> dict:
+def prompt_llm(template: object, module_data: object) -> dict:
     # Initialize a chatbot with structured output
-    llm = ChatOllama(model="gemma:2b")
+    llm = ChatOllama(
+        model="gemma:2b"
+    )  # TODO : refactor the model name it should come from a config file
+    # TODO: Move the initialization to the generate benchamrk function to avoid reinitializing
     llm = llm.with_structured_output(output_schema)
 
     # construct the prompt template
     prompt = ChatPromptTemplate(
-        [  # TODO: Replace the 'system' and 'user' values with configs from JSON
-            (
-                "system",
-                "You are a senior performance tester engineer proficient in Java programming language and JMH framework. "
-                "Your job is to generate Java code using JMH annotations to benchmark performance of the given module. "
-                "Please ensure the generated code is a valid JMH benchmark and follows best practices for performance testing."
-            ),
-            (
-                "user", 
-                "Please generate Java code using the JMH framework for benchmarking the following module. "
-                "The generated code should include setup, teardown, and at least one benchmark method. "
-                "Make sure the JMH code follows the structure of a typical JMH benchmark."
-            ),
+        [
+            ("system", template["system"]),
+            ("user", template["user"]),
             MessagesPlaceholder(
                 "module"
-            ),  # placeholder that will be filled with java code and module name
+            ),  # placeholder that will be filled with java code
         ]
     )
 
@@ -60,15 +45,14 @@ def prompt_llm(template: str, module_data: object) -> dict:
     chain = prompt | llm
 
     # invoke the model for response
-    response = chain.invoke(
-        {
-            "module": [  # passing the module name (path) and its content to llm
-                HumanMessage(
-                    content=f"Module path: {module_data['mod_name']}\n\nCode:\n{module_data['code']}"
-                )
-            ]
-        }
+    llm_response = chain.invoke(
+        {"module": [HumanMessage(content=f"Java Module Code:\n{module_data['code']}")]}
     )
+
+    response = {
+        "mod_name": module_data["mod_name"],
+        "Benchmark_code": llm_response["Benchmark_code"],
+    }
 
     return response
 
@@ -79,7 +63,7 @@ def check_output(llm_output: object, dest: Path) -> object:
     created JMH becnhmark to the given destination folder
 
     Args:
-        llm_output (AIMessage): given output by LLM which is expected in the JMH_Benchmark class
+        llm_output (object): given output by LLM which is expected in the JMH_Benchmark class
         format
 
         dest (Path): given destination path for the module that JMH benchmarks need to be stored in.
@@ -88,7 +72,7 @@ def check_output(llm_output: object, dest: Path) -> object:
         object: returns an object {"dest": "path"} which returns the destination to the module
 
     """
-    # TODO:
+    # TODO: Implement the function
     # validate the received output
     # if it is not valid raise an error
     # if it is valid write it to the destination folder with format of .java
@@ -174,8 +158,10 @@ def load_code(file_path: Path) -> str:
         raise IOError(f"Error reading file {file_path}: {e}")
 
 
-def generate(project_data: dict):  # complete pipe line
+def generate_benchmarks(project_data: dict):  # complete pipe line
     project_modules = load_input(project_data)
+    prompt_template = read_json(Path("./src/prompt.json"))
+    print(prompt_template)
 
     outputs = (
         []
@@ -186,12 +172,12 @@ def generate(project_data: dict):  # complete pipe line
         current_output = {"project_name": p["project_name"], "benchmarks": []}
 
         for module in p["content"]:  # for each module in the project
-            response = prompt_llm("Template", module)
-            path = check_output(response, Path("./output"))
+            response = prompt_llm(prompt_template, module)
+            benchmark_path = check_output(response, Path("./output"))
 
             # create pair of mod_name (path to the original module) and benchmark_path (path to the respective benchmark of the module)
             current_output["benchmarks"].append(
-                {"mod_name": module["mod_name"], "benchmark_path": path}
+                {"mod_name": module["mod_name"], "benchmark_path": benchmark_path}
             )
 
         outputs.append(current_output)
@@ -203,6 +189,8 @@ if __name__ == "__main__":
     # generate()
     project_data = read_json(Path("./src/projects.json").resolve())
 
+    prompt_template = read_json(Path("./src/prompt.json"))
+
     project_data = setup(
         model_url="http://127.0.0.1:11434",
         model_name="gemma:2b",
@@ -210,7 +198,7 @@ if __name__ == "__main__":
     )
 
     llm_input = load_input(project_data)
-    response = prompt_llm("template", llm_input[0]["content"][11])
+    response = prompt_llm(prompt_template, llm_input[0]["content"][12])
     print(response)
     # code = load_code(Path("/home/amirpooya78/thesis/JMH_test_case_creation_using_LLMs/projects/gson/gson/src/main/java/com/google/gson/ExclusionStrategy.java"))
     # print(code)
