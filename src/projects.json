@@ -13,7 +13,7 @@
             "name": "kafka",
             "ssh_url": "git@github.com:apache/kafka.git",
             "root_path": "./projects/kafka",
-            "analysis_path": "./projects/kafka/core/src/main/java/kafka/server",
+            "analysis_path": "./projects/kafka/clients/src/main/java/org/apache/kafka",
             "has_maven": "False",
             "modules": [],
             "gradle_settings_path": "./projects/kafka/settings.gradle"

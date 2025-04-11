@@ -13,19 +13,23 @@ output_schema = {
     "title": "JMH Benchmark",
     "type": "object",
     "properties": {
-        "Benchmark_code": {
+        "benchmark_code": {
             "type": "string",
-            "description": "The generated benchmark code for the given module using the JMH framework",
+            "description": "The generated java microbenchmark for the given module using the JMH framework",
         },
+        "class_name":{
+            "type": "string",
+            "description": "The name of the generated Java class."
+        }
     },
-    "required": ["Benchmark code"],
+    "required": ["benchmark_code", "class_name"],
 }
 
 
 def prompt_llm(template: object, module_data: object) -> dict:
     # Initialize a chatbot with structured output
     llm = ChatOllama(
-        model="gemma:2b"
+        model="mistral"
     )  # TODO : refactor the model name it should come from a config file
     # TODO: Move the initialization to the generate benchamrk function to avoid reinitializing
     llm = llm.with_structured_output(output_schema)
@@ -46,18 +50,19 @@ def prompt_llm(template: object, module_data: object) -> dict:
 
     # invoke the model for response
     llm_response = chain.invoke(
-        {"module": [HumanMessage(content=f"Java Module Code:\n{module_data['code']}")]}
+        {"module": [HumanMessage(content=f"Java Module:\n{module_data['code']}")]}
     )
 
     response = {
         "mod_name": module_data["mod_name"],
-        "Benchmark_code": llm_response["Benchmark_code"],
+        "benchmark_code": llm_response["benchmark_code"],
+        "class_name": llm_response['class_name']
     }
 
     return response
 
 
-def check_output(llm_output: object, dest: Path) -> object:
+def save_llm_output(llm_output: object, dest: Path) -> object:
     """
     This function checks the output of the LLM and validate its format and then writes the
     created JMH becnhmark to the given destination folder
@@ -173,7 +178,7 @@ def generate_benchmarks(project_data: dict):  # complete pipe line
 
         for module in p["content"]:  # for each module in the project
             response = prompt_llm(prompt_template, module)
-            benchmark_path = check_output(response, Path("./output"))
+            benchmark_path = save_llm_output(response, Path("./output"))
 
             # create pair of mod_name (path to the original module) and benchmark_path (path to the respective benchmark of the module)
             current_output["benchmarks"].append(
@@ -193,12 +198,13 @@ if __name__ == "__main__":
 
     project_data = setup(
         model_url="http://127.0.0.1:11434",
-        model_name="gemma:2b",
+        model_name="mistral",
         project_data=project_data,
     )
 
     llm_input = load_input(project_data)
     response = prompt_llm(prompt_template, llm_input[0]["content"][12])
-    print(response)
+    print(response['class_name'])
+    print(response['benchmark_code'])
     # code = load_code(Path("/home/amirpooya78/thesis/JMH_test_case_creation_using_LLMs/projects/gson/gson/src/main/java/com/google/gson/ExclusionStrategy.java"))
     # print(code)

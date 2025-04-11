@@ -11,4 +11,4 @@ from pathlib import Path
 project_data = read_json(Path('./src/projects.json').resolve())
 
 # TODO: replace the model_url and model_name with envioronment variables or config files variables
-project_data = setup(model_url='http://127.0.0.1:11434', model_name='gemma:2b', project_data=project_data)
+project_data = setup(model_url='http://127.0.0.1:11434', model_name='mistral', project_data=project_data)

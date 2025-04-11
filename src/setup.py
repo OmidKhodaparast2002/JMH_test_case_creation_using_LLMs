@@ -189,6 +189,6 @@ if __name__ == "__main__":
 
     project_data = setup(
         model_url="http://127.0.0.1:11434",
-        model_name="gemma:2b",
+        model_name="mistral",
         project_data=project_data,
     )
