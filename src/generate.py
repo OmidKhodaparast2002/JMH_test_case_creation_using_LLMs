@@ -17,23 +17,16 @@ output_schema = {
             "type": "string",
             "description": "The generated java microbenchmark for the given module using the JMH framework",
         },
-        "class_name":{
+        "class_name": {
             "type": "string",
-            "description": "The name of the generated Java class."
-        }
+            "description": "The name of the generated Java class.",
+        },
     },
     "required": ["benchmark_code", "class_name"],
 }
 
 
-def prompt_llm(template: object, module_data: object) -> dict:
-    # Initialize a chatbot with structured output
-    llm = ChatOllama(
-        model="mistral"
-    )  # TODO : refactor the model name it should come from a config file
-    # TODO: Move the initialization to the generate benchamrk function to avoid reinitializing
-    llm = llm.with_structured_output(output_schema)
-
+def prompt_llm(llm, template: object, module_data: object) -> dict:
     # construct the prompt template
     prompt = ChatPromptTemplate(
         [
@@ -56,15 +49,15 @@ def prompt_llm(template: object, module_data: object) -> dict:
     response = {
         "mod_name": module_data["mod_name"],
         "benchmark_code": llm_response["benchmark_code"],
-        "class_name": llm_response['class_name']
+        "class_name": llm_response["class_name"],
     }
 
     return response
 
 
-def save_llm_output(llm_output: object, dest: Path) -> object:
+def save_llm_output(llm_output: object, dest: Path) -> str:
     """
-    This function checks the output of the LLM and validate its format and then writes the
+    This function checks the output of the LLM and then writes the
     created JMH becnhmark to the given destination folder
 
     Args:
@@ -74,15 +67,22 @@ def save_llm_output(llm_output: object, dest: Path) -> object:
         dest (Path): given destination path for the module that JMH benchmarks need to be stored in.
 
     Returns:
-        object: returns an object {"dest": "path"} which returns the destination to the module
+        object: returns a string representing the path to the saved benchmark paht/file.java
 
     """
-    # TODO: Implement the function
-    # validate the received output
-    # if it is not valid raise an error
-    # if it is valid write it to the destination folder with format of .java
+    benchmark_code = llm_output['benchmark_code']
+    class_name = llm_output['class_name']
 
-    return
+    # Ensure the destination directory exists
+    dest.mkdir(parents=True, exist_ok=True)  # Create the directory if it doesn't exist
+
+    # Construct the full file path
+    jmh_file = dest / f"{class_name}.java"
+
+    with open(jmh_file, 'w') as file:
+        file.write(benchmark_code)
+    
+    return str(jmh_file)
 
 
 def load_input(project_data: dict) -> list:
@@ -166,19 +166,34 @@ def load_code(file_path: Path) -> str:
 def generate_benchmarks(project_data: dict):  # complete pipe line
     project_modules = load_input(project_data)
     prompt_template = read_json(Path("./src/prompt.json"))
-    print(prompt_template)
+    
+    llm = ChatOllama(
+        model="mistral"
+    )  # TODO : refactor the model name it should come from a config file
+   
+    llm = llm.with_structured_output(output_schema)
 
     outputs = (
         []
     )  # [{'project_name', 'benchmarks': [{'mod_name', 'benchmark_path'}, ...]}]
 
     for p in project_modules:  # for each project
+        project_info = next(
+            proj
+            for proj in project_data["projects"]
+            if proj["name"] == p["project_name"]
+        )
+
+        benchmarks_folder = project_info.get("llm_benchmarks_path")
+        print("Creating benchmarks...")
+        print(benchmarks_folder)
 
         current_output = {"project_name": p["project_name"], "benchmarks": []}
 
         for module in p["content"]:  # for each module in the project
-            response = prompt_llm(prompt_template, module)
-            benchmark_path = save_llm_output(response, Path("./output"))
+            response = prompt_llm(llm, prompt_template, module) # generate a benchmark
+
+            benchmark_path = save_llm_output(response, Path(benchmarks_folder)) # store the benchmark
 
             # create pair of mod_name (path to the original module) and benchmark_path (path to the respective benchmark of the module)
             current_output["benchmarks"].append(
@@ -191,10 +206,10 @@ def generate_benchmarks(project_data: dict):  # complete pipe line
 
 # Example usage
 if __name__ == "__main__":
-    # generate()
+   
     project_data = read_json(Path("./src/projects.json").resolve())
 
-    prompt_template = read_json(Path("./src/prompt.json"))
+    #prompt_template = read_json(Path("./src/prompt.json"))
 
     project_data = setup(
         model_url="http://127.0.0.1:11434",
@@ -202,9 +217,12 @@ if __name__ == "__main__":
         project_data=project_data,
     )
 
+    outputs = generate_benchmarks(project_data)
+
+    """
     llm_input = load_input(project_data)
     response = prompt_llm(prompt_template, llm_input[0]["content"][12])
-    print(response['class_name'])
-    print(response['benchmark_code'])
-    # code = load_code(Path("/home/amirpooya78/thesis/JMH_test_case_creation_using_LLMs/projects/gson/gson/src/main/java/com/google/gson/ExclusionStrategy.java"))
-    # print(code)
+    print(response["class_name"])
+    print(response["benchmark_code"])
+    """
+    

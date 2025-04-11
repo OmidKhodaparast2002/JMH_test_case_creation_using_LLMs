@@ -5,6 +5,7 @@
             "ssh_url": "git@github.com:apache/logging-log4j2.git",
             "root_path": "./projects/logging-log4j2",
             "analysis_path": "./projects/logging-log4j2/log4j-core/src/main/java/org/apache/logging/log4j/core",
+            "llm_benchmarks_path": "./projects/logging-log4j2/log4j-core/src/main/java/org/apache/logging/log4j/core/llm_benchmarks",
             "modules": [],
             "has_maven": "True",
             "parent_pom_path": "./projects/logging-log4j2/log4j-parent/pom.xml"
@@ -14,6 +15,7 @@
             "ssh_url": "git@github.com:apache/kafka.git",
             "root_path": "./projects/kafka",
             "analysis_path": "./projects/kafka/clients/src/main/java/org/apache/kafka",
+            "llm_benchmarks_path": "./projects/kafka/clients/src/main/java/org/apache/kafka/llm_benchmarks",
             "has_maven": "False",
             "modules": [],
             "gradle_settings_path": "./projects/kafka/settings.gradle"
@@ -23,6 +25,7 @@
             "ssh_url": "git@github.com:ReactiveX/RxJava.git",
             "root_path": "./projects/RxJava",
             "analysis_path": "./projects/RxJava/src/main/java/io/reactivex/rxjava3",
+            "llm_benchmarks_path": "./projects/RxJava/src/main/java/io/reactivex/rxjava3/llm_benchmarks",
             "has_maven": "False",
             "modules": [],
             "gradle_settings_path": "./projects/RxJava/settings.gradle"
@@ -32,6 +35,7 @@
             "ssh_url": "git@github.com:TheAlgorithms/Java.git",
             "root_path": "./projects/Java",
             "analysis_path": "./projects/Java/src/main/java/com/thealgorithms",
+            "llm_benchmarks_path": "./projects/Java/src/main/java/com/thealgorithms/llm_benchmarks",
             "modules": [],
             "has_maven": "True",
             "parent_pom_path": "./projects/Java/pom.xml"
@@ -41,6 +45,7 @@
             "ssh_url": "git@github.com:google/gson.git",
             "root_path": "./projects/gson",
             "analysis_path": "./projects/gson/gson/src/main/java/com/google/gson",
+            "llm_benchmarks_path": "./projects/gson/gson/src/main/java/com/google/gson/llm_benchmarks",
             "modules": [],
             "has_maven": "True",
             "parent_pom_path": "./projects/gson/pom.xml"
@@ -50,6 +55,7 @@
             "ssh_url": "git@github.com:jwtk/jjwt.git",
             "root_path": "./projects/jjwt",
             "analysis_path": "./projects/jjwt/impl/src/main/java/io/jsonwebtoken/impl",
+            "llm_benchmarks_path": "./projects/jjwt/impl/src/main/java/io/jsonwebtoken/impl/llm_benchmarks",
             "modules": [],
             "has_maven": "True",
             "parent_pom_path": "./projects/jjwt/pom.xml"
