@@ -31,10 +31,6 @@ def prompt_llm(prompt, api_key, interface_found_str, abstract_found_str):
             if utils.is_test_code_without_jmh(code):
                 raise NoCodeFoundError("No code found in response")
             return code
-        elif response_message == interface_found_str:
-            return interface_found_str
-        elif response_message == abstract_found_str:
-            return abstract_found_str
         else:
             raise NoCodeFoundError("No code found in response")
         
@@ -53,6 +49,7 @@ def create_microbenchmarks(projects, prompt_str, api_key, interface_found_str, a
     retries = 0
 
     for project in projects:
+        print(f"creating microbenchmarks for {project['name']}...")
         tokens = 0
         i = 0
 

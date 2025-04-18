@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import shutil
 
 def folder_exists(folder_path):
     return os.path.exists(folder_path)
@@ -46,3 +47,16 @@ def is_test_code_without_jmh(code):
         return True
 
     return False
+
+def remove_dir_and_files(dir_path):
+    if os.path.exists(dir_path):
+        shutil.rmtree(dir_path)
+
+def remove_last_run_config(projects_path, generated_jmh_dir):
+    if os.path.exists(projects_path):
+        for dir in os.listdir(projects_path):
+            dir_path = os.path.join(projects_path, dir)
+            if os.path.isdir(dir_path):
+                for dir2 in os.listdir(dir_path):
+                    if dir2 == generated_jmh_dir:
+                        shutil.rmtree(os.path.join(dir_path, dir2))

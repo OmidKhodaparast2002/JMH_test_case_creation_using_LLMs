@@ -38,3 +38,6 @@ dependencies:
   - wheel=0.45.1
   - xz=5.6.4
   - zlib=1.2.13
+  - pip:
+      - javalang==0.13.0
+      - six==1.17.0

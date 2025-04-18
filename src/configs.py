@@ -4,6 +4,7 @@ import os
 load_dotenv()
 
 GENERATED_MICROBENCHMARKS_DIR = "generated_jmh"
+PACKAGE_NAME = "org.ai.bench.jmh.generated"
 JMH_POM_TEMPLATE = f"""<?xml version="1.0" encoding="UTF-8"?>
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -11,7 +12,7 @@ JMH_POM_TEMPLATE = f"""<?xml version="1.0" encoding="UTF-8"?>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.ai.bench.jmh.generated</groupId>
-    <artifactId>generated_jmh</artifactId>
+    <artifactId>{GENERATED_MICROBENCHMARKS_DIR}</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
@@ -23,7 +24,7 @@ JMH_POM_TEMPLATE = f"""<?xml version="1.0" encoding="UTF-8"?>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jmh.version>1.13</jmh.version>
+        <jmh.version>1.37</jmh.version>
         <uberjar.name>{GENERATED_MICROBENCHMARKS_DIR}</uberjar.name>
     </properties>
 
@@ -46,6 +47,19 @@ JMH_POM_TEMPLATE = f"""<?xml version="1.0" encoding="UTF-8"?>
         </dependency>
     </dependencies>
 
+    <repositories>
+        <repository>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <id>apache.snapshots</id>
+            <url>https://repository.apache.org/snapshots</url>
+        </repository>
+    </repositories>
+
     <build>
         <sourceDirectory>src/jmh/java</sourceDirectory>
         <plugins>
@@ -54,9 +68,15 @@ JMH_POM_TEMPLATE = f"""<?xml version="1.0" encoding="UTF-8"?>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.1</version>
                 <configuration>
-                    <compilerVersion>${{javac.target}}</compilerVersion>
                     <source>${{javac.target}}</source>
                     <target>${{javac.target}}</target>
+                    <annotationProcessorPaths combine.children="append">
+                        <path>
+                            <groupId>org.openjdk.jmh</groupId>
+                            <artifactId>jmh-generator-annprocess</artifactId>
+                            <version>${{jmh.version}}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
@@ -71,10 +91,11 @@ JMH_POM_TEMPLATE = f"""<?xml version="1.0" encoding="UTF-8"?>
                         </goals>
                         <configuration>
                             <finalName>${{uberjar.name}}</finalName>
-                            <transformers>
+                            <transformers combine.children="append">
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.openjdk.jmh.Main</mainClass>
                                 </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                             </transformers>
                             <filters>
                                 <filter>
@@ -143,53 +164,65 @@ API_KEY = os.getenv("GPT_KEY")
 PROJECTS_INFO = [
     {
         "name": "logging-log4j2",
-        "ssh_url": "git@github.com:apache/logging-log4j2.git",
+        "ssh_url": "https://github.com/apache/logging-log4j2.git",
         "root_path": os.path.join("..", "projects", "logging-log4j2"),
         "analysis_path": os.path.join("..", "projects", "logging-log4j2", "log4j-core", "src", "main", "java", "org", "apache", "logging", "log4j", "core"),
         "modules": [],
         "has_maven": True,
+        "maven_install_dirs": [
+            os.path.join("..", "projects", "logging-log4j2"),
+        ],
         "parent_pom_path": os.path.join("..", "projects", "logging-log4j2", "log4j-parent", "pom.xml"),
         "dependency_list": [
             {
                 "artifactId": "log4j-core",
                 "groupId": "org.apache.logging.log4j",
-                "version": "${revision}"
+                "version": "2.25.0-SNAPSHOT"
             },
             {
                 "artifactId": "log4j-api",
                 "groupId": "org.apache.logging.log4j",
-                "version": "${revision}"
+                "version": "2.25.0-SNAPSHOT"
             }
         ],
         "java_version": "17.0.14-tem"
     },
     {
         "name": "kafka",
-        "ssh_url": "git@github.com:apache/kafka.git",
+        "ssh_url": "https://github.com/apache/kafka.git",
         "root_path": os.path.join("..", "projects", "kafka"),
         "analysis_path": os.path.join("..", "projects", "kafka", "clients", "src", "main", "java", "org", "apache", "kafka"),
         "has_maven": False,
         "modules": [],
         "gradle_settings_path": os.path.join("..", "projects", "kafka", "settings.gradle"),
-        "java_version": "17.0.14-tem"
+        "java_version": "17.0.14-tem",
+        "dependency_list": [
+            ":clients"
+        ]
     },
     {
         "name": "RxJava",
-        "ssh_url": "git@github.com:ReactiveX/RxJava.git",
+        "ssh_url": "https://github.com/ReactiveX/RxJava.git",
         "root_path": os.path.join("..", "projects", "RxJava"),
         "analysis_path": os.path.join("..", "projects", "RxJava", "src", "main", "java", "io", "reactivex", "rxjava3"),
         "has_maven": False,
         "modules": [],
         "gradle_settings_path": os.path.join("..", "projects", "RxJava", "settings.gradle"),
-        "java_version": "8.0.442-tem"
+        "java_version": "8.0.442-tem",
+        "dependency_list": [
+            ":"
+        ]
     },
     {
         "name": "Java",
-        "ssh_url": "git@github.com:TheAlgorithms/Java.git",
+        "ssh_url": "https://github.com/TheAlgorithms/Java.git",
         "root_path": os.path.join("..", "projects", "Java"),
         "analysis_path": os.path.join("..", "projects", "Java", "src", "main", "java", "com", "thealgorithms"),
         "modules": [],
         "has_maven": True,
+        "maven_install_dirs": [
+            os.path.join("..", "projects", "Java")
+        ],
         "parent_pom_path": os.path.join("..", "projects", "Java", "pom.xml"),
         "dependency_list": [
             {
@@ -201,17 +234,25 @@ PROJECTS_INFO = [
                 "artifactId": "commons-collections4",
                 "groupId": "org.apache.commons",
                 "version": "4.5.0-M3"
+            },
+            {
+                "artifactId": "Java",
+                "groupId": "com.thealgorithms",
+                "version": "1.0-SNAPSHOT"
             }
         ],
         "java_version": "21.0.6-tem"
     },
     {
         "name": "gson",
-        "ssh_url": "git@github.com:google/gson.git",
+        "ssh_url": "https://github.com/google/gson.git",
         "root_path": os.path.join("..", "projects", "gson"),
         "analysis_path": os.path.join("..", "projects", "gson", "gson", "src", "main", "java", "com", "google", "gson"),
         "modules": [],
         "has_maven": True,
+        "maven_install_dirs": [
+            os.path.join("..", "projects", "gson", "gson")
+        ],
         "parent_pom_path": os.path.join("..", "projects", "gson", "pom.xml"),
         "dependency_list": [
             {
@@ -223,17 +264,25 @@ PROJECTS_INFO = [
                 "artifactId": "proguard-base",
                 "groupId": "com.guardsquare",
                 "version": "7.6.1"
+            },
+            {
+                "artifactId": "gson",
+                "groupId": "com.google.code.gson",
+                "version": "2.12.2-SNAPSHOT"
             }
         ],
         "java_version": "17.0.14-tem"
     },
     {
         "name": "jjwt",
-        "ssh_url": "git@github.com:jwtk/jjwt.git",
+        "ssh_url": "https://github.com/jwtk/jjwt.git",
         "root_path": os.path.join("..", "projects", "jjwt"),
         "analysis_path": os.path.join("..", "projects", "jjwt", "impl", "src", "main", "java", "io", "jsonwebtoken", "impl"),
         "modules": [],
         "has_maven": True,
+        "maven_install_dirs": [
+            os.path.join("..", "projects", "jjwt")
+        ],
         "parent_pom_path": os.path.join("..", "projects", "jjwt", "pom.xml"),
         "dependency_list": [
             {
@@ -241,6 +290,11 @@ PROJECTS_INFO = [
                 "groupId": "io.jsonwebtoken",
                 "version": "0.12.7-SNAPSHOT"
             },
+            {
+                "artifactId": "jjwt-impl",
+                "groupId": "io.jsonwebtoken",
+                "version": "0.12.7-SNAPSHOT"
+            }
         ],
         "java_version": "17.0.14-tem"
     }
