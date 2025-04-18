@@ -2,9 +2,9 @@ from pathlib import Path
 from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from utils import read_json
 
 ######################### DELETE THESE IMPORTS #############################
-from utils import read_json
 from setup import setup
 
 ############################################################################
@@ -70,8 +70,8 @@ def save_llm_output(llm_output: object, dest: Path) -> str:
         object: returns a string representing the path to the saved benchmark paht/file.java
 
     """
-    benchmark_code = llm_output['benchmark_code']
-    class_name = llm_output['class_name']
+    benchmark_code = llm_output["benchmark_code"]
+    class_name = llm_output["class_name"]
 
     # Ensure the destination directory exists
     dest.mkdir(parents=True, exist_ok=True)  # Create the directory if it doesn't exist
@@ -79,9 +79,9 @@ def save_llm_output(llm_output: object, dest: Path) -> str:
     # Construct the full file path
     jmh_file = dest / f"{class_name}.java"
 
-    with open(jmh_file, 'w') as file:
+    with open(jmh_file, "w") as file:
         file.write(benchmark_code)
-    
+
     return str(jmh_file)
 
 
@@ -163,14 +163,12 @@ def load_code(file_path: Path) -> str:
         raise IOError(f"Error reading file {file_path}: {e}")
 
 
-def generate_benchmarks(project_data: dict):  # complete pipe line
+def generate_benchmarks(project_data: dict, model_name: str):  # complete pipe line
     project_modules = load_input(project_data)
     prompt_template = read_json(Path("./src/prompt.json"))
-    
-    llm = ChatOllama(
-        model="mistral"
-    )  # TODO : refactor the model name it should come from a config file
-   
+
+    # Initialize chat model
+    llm = ChatOllama(model=model_name)
     llm = llm.with_structured_output(output_schema)
 
     outputs = (
@@ -191,9 +189,11 @@ def generate_benchmarks(project_data: dict):  # complete pipe line
         current_output = {"project_name": p["project_name"], "benchmarks": []}
 
         for module in p["content"]:  # for each module in the project
-            response = prompt_llm(llm, prompt_template, module) # generate a benchmark
+            response = prompt_llm(llm, prompt_template, module)  # generate a benchmark
 
-            benchmark_path = save_llm_output(response, Path(benchmarks_folder)) # store the benchmark
+            benchmark_path = save_llm_output(
+                response, Path(benchmarks_folder)
+            )  # store the benchmark
 
             # create pair of mod_name (path to the original module) and benchmark_path (path to the respective benchmark of the module)
             current_output["benchmarks"].append(
@@ -206,10 +206,10 @@ def generate_benchmarks(project_data: dict):  # complete pipe line
 
 # Example usage
 if __name__ == "__main__":
-   
+
     project_data = read_json(Path("./src/projects.json").resolve())
 
-    #prompt_template = read_json(Path("./src/prompt.json"))
+    # prompt_template = read_json(Path("./src/prompt.json"))
 
     project_data = setup(
         model_url="http://127.0.0.1:11434",
@@ -225,4 +225,3 @@ if __name__ == "__main__":
     print(response["class_name"])
     print(response["benchmark_code"])
     """
-    

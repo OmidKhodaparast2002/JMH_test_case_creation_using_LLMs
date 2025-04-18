@@ -8,7 +8,8 @@
             "llm_benchmarks_path": "./projects/logging-log4j2/log4j-core/src/main/java/org/apache/logging/log4j/core/llm_benchmarks",
             "modules": [],
             "has_maven": "True",
-            "parent_pom_path": "./projects/logging-log4j2/log4j-parent/pom.xml"
+            "parent_pom_path": "./projects/logging-log4j2/log4j-parent/pom.xml",
+            "has_jmh": "True"
         },
         {
             "name": "kafka",
@@ -18,7 +19,8 @@
             "llm_benchmarks_path": "./projects/kafka/clients/src/main/java/org/apache/kafka/llm_benchmarks",
             "has_maven": "False",
             "modules": [],
-            "gradle_settings_path": "./projects/kafka/settings.gradle"
+            "gradle_build_path": "./projects/kafka/settings.gradle",
+            "has_jmh": "True"
         },
         {
             "name": "RxJava",
@@ -28,7 +30,8 @@
             "llm_benchmarks_path": "./projects/RxJava/src/main/java/io/reactivex/rxjava3/llm_benchmarks",
             "has_maven": "False",
             "modules": [],
-            "gradle_settings_path": "./projects/RxJava/settings.gradle"
+            "gradle_build_path": "./projects/RxJava/build.gradle",
+            "has_jmh": "True"
         },
         {
             "name": "Java",
@@ -38,7 +41,8 @@
             "llm_benchmarks_path": "./projects/Java/src/main/java/com/thealgorithms/llm_benchmarks",
             "modules": [],
             "has_maven": "True",
-            "parent_pom_path": "./projects/Java/pom.xml"
+            "parent_pom_path": "./projects/Java/pom.xml",
+            "has_jmh": "False"
         },
         {
             "name": "gson",
@@ -48,7 +52,8 @@
             "llm_benchmarks_path": "./projects/gson/gson/src/main/java/com/google/gson/llm_benchmarks",
             "modules": [],
             "has_maven": "True",
-            "parent_pom_path": "./projects/gson/pom.xml"
+            "parent_pom_path": "./projects/gson/pom.xml",
+            "has_jmh": "False"
         },
         {
             "name": "jjwt",
@@ -58,7 +63,8 @@
             "llm_benchmarks_path": "./projects/jjwt/impl/src/main/java/io/jsonwebtoken/impl/llm_benchmarks",
             "modules": [],
             "has_maven": "True",
-            "parent_pom_path": "./projects/jjwt/pom.xml"
+            "parent_pom_path": "./projects/jjwt/pom.xml",
+            "has_jmh": "False"
         }
     ]
 }
