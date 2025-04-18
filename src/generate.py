@@ -3,6 +3,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from utils import read_json
+import shutil
 
 ######################### DELETE THESE IMPORTS #############################
 from setup import setup
@@ -182,9 +183,22 @@ def generate_benchmarks(project_data: dict, model_name: str):  # complete pipe l
             if proj["name"] == p["project_name"]
         )
 
-        benchmarks_folder = project_info.get("llm_benchmarks_path")
+        benchmarks_folder = Path(project_info.get("llm_benchmarks_path"))
         print("Creating benchmarks...")
         print(benchmarks_folder)
+
+        # 🧹 Clean the benchmarks folder before starting
+        if benchmarks_folder.exists() and benchmarks_folder.is_dir():
+            for file in benchmarks_folder.iterdir():
+                try:
+                    if file.is_file() or file.is_symlink():
+                        file.unlink()
+                    elif file.is_dir():
+                        shutil.rmtree(file)
+                except Exception as e:
+                    print(f"Failed to delete {file}: {e}")
+        else:
+            benchmarks_folder.mkdir(parents=True, exist_ok=True)
 
         current_output = {"project_name": p["project_name"], "benchmarks": []}
 
@@ -192,7 +206,7 @@ def generate_benchmarks(project_data: dict, model_name: str):  # complete pipe l
             response = prompt_llm(llm, prompt_template, module)  # generate a benchmark
 
             benchmark_path = save_llm_output(
-                response, Path(benchmarks_folder)
+                response, benchmarks_folder
             )  # store the benchmark
 
             # create pair of mod_name (path to the original module) and benchmark_path (path to the respective benchmark of the module)
