@@ -46,7 +46,8 @@ def prompt_llm(prompt, api_key, interface_found_str, abstract_found_str):
 def create_microbenchmarks(projects, prompt_str, api_key, interface_found_str, abstract_found_str, no_code_found_str, api_error_str, unknown_error_str, max_retries):
     curr_timestamp = time.time()
     requests = 0
-    retries = 0
+    api_retries = 0
+    no_code_retries = 0
 
     for project in projects:
         print(f"creating microbenchmarks for {project['name']}...")
@@ -91,24 +92,32 @@ def create_microbenchmarks(projects, prompt_str, api_key, interface_found_str, a
             except NoCodeFoundError as e:
                 print(e)
                 module["test_code"] = no_code_found_str
+                if no_code_retries < max_retries:
+                    no_code_retries += 1
+                    print(f"Retrying {no_code_retries}/{max_retries}...")
+                    continue
+                else:
+                    module["test_code"] = no_code_found_str
+                    no_code_retries = 0
 
             except APIError as e:
                 print(e)
                 print(f"API error, retrying...")
-                if retries < max_retries:
-                    retries += 1
-                    print(f"Retrying {retries}/{max_retries}...")
+                if api_retries < max_retries:
+                    api_retries += 1
+                    print(f"Retrying {api_retries}/{max_retries}...")
                     continue
                 else:
                     module["test_code"] = api_error_str
-                    retries = 0
+                    api_retries = 0
 
             except Exception as e:
                 print(e)
                 module["test_code"] = unknown_error_str
 
             i += 1
-            retries = 0
+            api_retries = 0
+            no_code_retries = 0
 
 class APIError(Exception):
     pass
