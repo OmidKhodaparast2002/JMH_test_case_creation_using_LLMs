@@ -57,7 +57,7 @@ def create_microbenchmarks(projects, prompt_str, api_key, interface_found_str, a
         print(f"Creating microbenchmarks for {project['name']}...")
 
         while i < len(project["modules"]):
-            print(f"creating microbenchmark number {i} out of {len(project['modules'])}...")
+            print(f"creating microbenchmark number {i + 1} out of {len(project['modules'])}...")
             module = project["modules"][i]
             prompt = prompt_str + module["code"]
 
