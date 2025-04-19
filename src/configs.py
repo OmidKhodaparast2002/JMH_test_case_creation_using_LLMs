@@ -66,7 +66,7 @@ JMH_POM_TEMPLATE = f"""<?xml version="1.0" encoding="UTF-8"?>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
+                <version>3.8.1</version>
                 <configuration>
                     <source>${{javac.target}}</source>
                     <target>${{javac.target}}</target>
@@ -82,7 +82,7 @@ JMH_POM_TEMPLATE = f"""<?xml version="1.0" encoding="UTF-8"?>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>2.2</version>
+                <version>3.4.1</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -120,39 +120,39 @@ JMH_POM_TEMPLATE = f"""<?xml version="1.0" encoding="UTF-8"?>
             <plugins>
                 <plugin>
                     <artifactId>maven-clean-plugin</artifactId>
-                    <version>2.5</version>
+                    <version>3.4.1</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
-                    <version>2.8.1</version>
+                    <version>3.1.4</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-install-plugin</artifactId>
-                    <version>2.5.1</version>
+                    <version>3.1.4</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>3.3.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.9.1</version>
+                    <version>3.11.2</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>2.6</version>
+                    <version>3.3.1</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.3</version>
+                    <version>3.21.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>2.2.1</version>
+                    <version>3.3.1</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.17</version>
+                    <version>3.5.3</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -314,7 +314,6 @@ PROMPT_ONE = f"""You are a senior verification developer. You are an expert in
 writing JMH microbenchmark test cases. You are also an expert analyzing code and writing JMH test cases for it.
 You are proficient in the Java programming language. You are assigned to write an appropriate
 number of JMH microbenchmark test cases to test the performance of the following code module. Please only provide the the benchmark module
-and no explanations. You must ignore "Abstract classes" by returning "{ABSTRACT_CLASS_FOUND}" as output. 
-You must ignore "interfaces" by returning "{INTERFACE_FOUND}" as output.
+and no explanations. You must not create benchmarks for private, protected, and default methods and classes.
 
 Here is the code:\n\n"""

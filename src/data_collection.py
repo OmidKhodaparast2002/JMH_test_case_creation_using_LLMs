@@ -63,6 +63,10 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
             print(f"Failed to activate Java version for {project['name']} project: {e}")
             return
 
+        if "JAVA_HOME" not in os.environ:
+            os.environ["JAVA_HOME"] = os.path.expanduser("~/.sdkman/candidates/java/current")
+            os.environ["PATH"] = os.path.join(os.environ["JAVA_HOME"], "bin") + ":" + os.environ["PATH"]
+
     # Install all project before moving on
     if has_maven:
         try: 
@@ -120,6 +124,7 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
                         cwd=os.path.join(root_path, generated_microbenchmarks_dir),
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
+                        env=os.environ,
                         text=True,
                         check=True
                     )
@@ -130,6 +135,7 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
                         cwd=root_path,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
+                        env=os.environ,
                         text=True,
                         check=True
                     )
@@ -206,10 +212,8 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
                             num_of_benchmarks_executed += 1
                 else:
                     num_of_benchmarks_executed += len(module["benchmarks"])
-                print("\n\n\n")
-                return
         
-        print("\n\n\n")
+        print("\n\n")
         benchamrks = None
         execution_return_code = None
         cwd = None
@@ -312,7 +316,7 @@ def stream_and_analyze_jmh_output(command, cwd, class_name, package_path):
     pattern = re.compile(rf"# Benchmark:\s+{re.escape(package_path)}\.{re.escape(class_name)}\.(\w+)")
 
     try:
-        with subprocess.Popen(shlex.split(command), cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1) as proc:
+        with subprocess.Popen(shlex.split(command), cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, env=os.environ) as proc:
             for line in proc.stdout:
                 # print(line.strip())  # Optional: for real-time logging
                 match = pattern.match(line)
@@ -408,6 +412,8 @@ def activate_java_version(java_version: str):
             stderr=subprocess.PIPE,
             text=True,
         )
+        # see if java -version works
+        subprocess.run(["java", "-version"], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Failed to switch to Java {java_version} using SDKMAN:\n{e.stderr}")
         raise e
