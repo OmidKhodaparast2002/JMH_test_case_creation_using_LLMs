@@ -68,7 +68,7 @@ def run_analysis(project_obj, modules_path):
                     if contains_interface_or_abstract_class(code):
                         continue  # Skip this module
 
-                    code = remove_non_public_methods(code)
+                    # code = remove_non_public_methods(code)
 
                 module = {
                     "name": file,

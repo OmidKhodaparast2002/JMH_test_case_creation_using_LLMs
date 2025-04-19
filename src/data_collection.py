@@ -4,6 +4,8 @@ import subprocess
 import re
 from typing import Dict, List
 import shlex
+import time
+import threading
 
 # We use this when subprocess.run() throws an exception other than CalledProcessError
 NOT_RUN_EXCEPTION_ERR_STR = "SOMETHING WENT WRONG"
@@ -308,17 +310,25 @@ def extract_compile_error_types(stderr_output: str) -> list[str]:
 
     return matched_errors if matched_errors else ["Unknown Error"]
 
-def stream_and_analyze_jmh_output(command, cwd, class_name, package_path):
+def stream_and_analyze_jmh_output(command, cwd, class_name, package_path, timeout_minutes=20):
     benchmark_results = []
     current_benchmark = None
     collected_lines = []
+    timeout_thread = None
+
+    timeout_triggered = {"value": False}  # use mutable object for scope
 
     pattern = re.compile(rf"# Benchmark:\s+{re.escape(package_path)}\.{re.escape(class_name)}\.(\w+)")
 
     try:
         with subprocess.Popen(shlex.split(command), cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, env=os.environ) as proc:
+
+            # Start timeout watcher
+            timeout_thread = threading.Thread(target=kill_process_after_timeout, args=(class_name, proc, timeout_minutes * 60, timeout_triggered))
+            timeout_thread.start()
+
             for line in proc.stdout:
-                # print(line.strip())  # Optional: for real-time logging
+                print(line.strip())  # Optional: for real-time logging
                 match = pattern.match(line)
                 if match:
                     # Flush previous benchmark result
@@ -338,6 +348,10 @@ def stream_and_analyze_jmh_output(command, cwd, class_name, package_path):
                     benchmark_results.append(res)
 
         proc.wait()
+        timeout_thread.join()
+
+        if timeout_triggered["value"]:
+            return -1, [], "Timeout"
 
         # Deduplicate by benchmark name
         deduped = {}
@@ -369,6 +383,13 @@ def flush(current_benchmark, collected_lines):
         
         return bench_info
     return None
+
+def kill_process_after_timeout(class_name, proc, timeout_sec, timeout_triggered):
+    time.sleep(timeout_sec)
+    if proc.poll() is None:
+        print(f" Timeout reached: killing process for {class_name}")
+        timeout_triggered["value"] = True
+        proc.kill()
 
 def parse_benchmark_result(lines):
     for i, line in enumerate(lines):
