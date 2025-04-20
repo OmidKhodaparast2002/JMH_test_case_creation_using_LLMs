@@ -15,14 +15,14 @@ project_data = read_json(Path("./src/projects.json").resolve())
 
 # TODO: replace the model_url and model_name with envioronment variables or config files variables
 project_data = setup(
-    model_url="http://127.0.0.1:11434", model_name="mistral", project_data=project_data
+    model_url="http://127.0.0.1:11434", model_name="codellama", project_data=project_data
 )
 
 # Example of 10 modules only first project
-project_data['projects'][3]['modules'] = project_data['projects'][3]['modules'][0:10]
+project_data['projects'][3]['modules'] = project_data['projects'][3]['modules'][10:20]
 project_data['projects'] = [project_data['projects'][3]]
 
-#benchmarks = generate_benchmarks(project_data, model_name="mistral")
+#benchmarks = generate_benchmarks(project_data, model_name="codellama")
 
 setup_configs(project_data)
 compile_and_run_benchmarks(project_data)

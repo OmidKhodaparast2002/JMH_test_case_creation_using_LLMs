@@ -4,6 +4,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from utils import read_json
 import shutil
+import re
 
 ######################### DELETE THESE IMPORTS #############################
 from setup import setup
@@ -123,7 +124,9 @@ def load_input(project_data: dict) -> list:
             "modules"
         ]:  # mod is a string representing the path to a module
             code = load_code(Path(mod))  # read the code of the given module
-
+            # Skip if it's an interface, abstract class, or has no methods
+            if is_skippable(code):
+                continue
             # Add the module name alongside its code to the content of the project (current input)
             current_input["content"].append({"mod_name": mod, "code": code})
 
@@ -132,6 +135,19 @@ def load_input(project_data: dict) -> list:
 
     return inputs
 
+def is_skippable(code: str) -> bool:
+    """
+    Returns True if the Java code is an interface, an abstract class, or doesn't contain any methods.
+    """
+    if "interface" in code:
+        return True
+    if "abstract class" in code:
+        return True
+    # Match method declarations: e.g., public void foo(), int bar(), etc.
+    method_pattern = re.compile(r"\b(public|private|protected)?\s+[\w<>\[\]]+\s+\w+\s*\([^)]*\)\s*{")
+    if not method_pattern.search(code):
+        return True
+    return False
 
 def load_code(file_path: Path) -> str:
     """
@@ -203,6 +219,7 @@ def generate_benchmarks(project_data: dict, model_name: str):  # complete pipe l
         current_output = {"project_name": p["project_name"], "benchmarks": []}
 
         for module in p["content"]:  # for each module in the project
+
             response = prompt_llm(llm, prompt_template, module)  # generate a benchmark
 
             benchmark_path = save_llm_output(

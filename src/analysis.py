@@ -8,6 +8,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import subprocess
+import re
 
 JMH_VERSION = "1.37"
 
@@ -114,13 +115,15 @@ def setup_configs(project_data: dict):
 
     return
 
+"""
+
 def compile_and_run_benchmarks(project_data: dict):
-    """
+   
     This function compiles the LLM-generated benchmarks and stores the success/failure results.
 
     Args:
         project_data (dict): projects configuration
-    """
+   
     for project in project_data['projects']:
         path_to_benchmarks = Path(project['llm_benchmarks_path'])
         project_classpath = project['project_classpath']  # Should include project dependencies
@@ -183,6 +186,76 @@ def compile_and_run_benchmarks(project_data: dict):
 
 
     return
+
+"""
+def compile_and_run_benchmarks(project_data: dict):
+    import re
+
+    for project in project_data['projects']:
+        path_to_benchmarks = Path(project['llm_benchmarks_path'])
+        project_root = Path(project['root_path'])
+        project_classpath = project['project_classpath']
+
+        if path_to_benchmarks.is_dir():
+            benchmarks = list(path_to_benchmarks.rglob("*.java"))
+
+            total = len(benchmarks)
+            successful_compile = 0
+            successful_run = 0
+
+            print(f"\n📦 Processing {project['name']}... Found {total} benchmarks.")
+
+            output_dir = path_to_benchmarks / "compiled"
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            for benchmark_file in benchmarks:
+                benchmark_path = str(benchmark_file)
+                class_name = benchmark_file.stem
+                package = extract_package(benchmark_file)
+                full_class_name = f"{package}.{class_name}" if package else class_name
+
+                try:
+                    # Compile
+                    subprocess.run(
+                        [
+                            "javac",
+                            "-cp",
+                            project_classpath,
+                            "-d",
+                            str(output_dir),
+                            benchmark_path,
+                        ],
+                        check=True,
+                        capture_output=True
+                    )
+                    successful_compile += 1
+                    print(f"✅ Compiled: {benchmark_file.name}")
+
+                    # Run
+                    subprocess.run(
+                        [
+                            "java",
+                            "-cp",
+                            f"{output_dir}:{project_classpath}",
+                            "org.openjdk.jmh.Main",
+                            full_class_name
+                        ],
+                        check=True,
+                        capture_output=True
+                    )
+                    successful_run += 1
+                    print(f"🚀 Ran: {full_class_name}")
+
+                except subprocess.CalledProcessError as e:
+                    print(f"❌ Benchmark {benchmark_file.name} failed:\n{e.stderr.decode()}")
+
+            print(
+                f"\n📊 Summary for {project['name']}:\n"
+                f"   Total: {total}\n"
+                f"   Compiled: {successful_compile}\n"
+                f"   Ran: {successful_run}"
+            )
+
 
 def get_gradle_classpath(project_root: Path) -> str:
     try:
