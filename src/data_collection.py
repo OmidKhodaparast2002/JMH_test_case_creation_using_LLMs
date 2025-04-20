@@ -109,6 +109,8 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
 
                 with open(os.path.join(project["microbenchmarks_path"], class_name + ".java"), "w") as f:
                     code = module["test_code"]
+                    # Remove any existing package statement
+                    utils.remove_existing_package_statement(code)
                     # add package statement
                     code = f"package {package_path};\n" + code
                     f.write(code)
@@ -191,18 +193,18 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
                     module["could_not_be_executed"] = False
                     modules_executed_sucessfully += 1
                 else:
+                    module["benchmark_results"] = benchmark_results
                     module["could_not_be_executed"] = True
                     module["execution_error"] = execution_error
                     modules_not_executed_successfully += 1
                     module_names_that_did_not_execute_successfully.append(module["name"])
 
             # delete the microbenchmark file
-            if module["could_not_be_compiled"]:
-                try:
-                    os.remove(os.path.join(project["microbenchmarks_path"], class_name + ".java"))
-                except Exception as e:
-                    err = str(e)
-                    print(f"Failed to delete {class_name}.java. {err}")
+            try:
+                os.remove(os.path.join(project["microbenchmarks_path"], class_name + ".java"))
+            except Exception as e:
+                err = str(e)
+                print(f"Failed to delete {class_name}.java. {err}")
             
             total_num_of_benchmarks += len(module["benchmarks"])
 
@@ -231,6 +233,12 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
     project["total_num_of_benchmarks"] = total_num_of_benchmarks
     project["num_of_benchmarks_compiled"] = num_of_benchmarks_compiled
     project["num_of_benchmarks_executed"] = num_of_benchmarks_executed
+    project["modules_with_API_error"] = modules_with_API_error
+    project["modules_with_unknown_error"] = modules_with_unknown_error
+
+    project["modules_not_executed_successfully"] = modules_not_executed_successfully
+    project["modules_executed_sucessfully"] = modules_executed_sucessfully
+    project["module_names_that_did_not_execute_successfully"] = module_names_that_did_not_execute_successfully
 
     print(f"Finished compiling and executing microbenchmarks for {project['name']}")
     print("----------------------------------------------------")
@@ -314,20 +322,24 @@ def stream_and_analyze_jmh_output(command, cwd, class_name, package_path, timeou
     benchmark_results = []
     current_benchmark = None
     collected_lines = []
-    timeout_thread = None
-
-    timeout_triggered = {"value": False}  # use mutable object for scope
+    timeout_seconds = timeout_minutes * 60
+    time_out_reached = False
 
     pattern = re.compile(rf"# Benchmark:\s+{re.escape(package_path)}\.{re.escape(class_name)}\.(\w+)")
+
+    start_time = time.time()
 
     try:
         with subprocess.Popen(shlex.split(command), cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, env=os.environ) as proc:
 
-            # Start timeout watcher
-            timeout_thread = threading.Thread(target=kill_process_after_timeout, args=(class_name, proc, timeout_minutes * 60, timeout_triggered))
-            timeout_thread.start()
-
             for line in proc.stdout:
+                elasped_time = time.time() - start_time
+                if elasped_time > timeout_seconds:
+                    time_out_reached = True
+                    proc.kill()
+                    break
+
+
                 print(line.strip())  # Optional: for real-time logging
                 match = pattern.match(line)
                 if match:
@@ -348,10 +360,9 @@ def stream_and_analyze_jmh_output(command, cwd, class_name, package_path, timeou
                     benchmark_results.append(res)
 
         proc.wait()
-        timeout_thread.join()
 
-        if timeout_triggered["value"]:
-            return -1, [], "Timeout"
+        if time_out_reached:
+            return -1, benchmark_results, "Timeout reached"
 
         # Deduplicate by benchmark name
         deduped = {}
@@ -383,13 +394,6 @@ def flush(current_benchmark, collected_lines):
         
         return bench_info
     return None
-
-def kill_process_after_timeout(class_name, proc, timeout_sec, timeout_triggered):
-    time.sleep(timeout_sec)
-    if proc.poll() is None:
-        print(f" Timeout reached: killing process for {class_name}")
-        timeout_triggered["value"] = True
-        proc.kill()
 
 def parse_benchmark_result(lines):
     for i, line in enumerate(lines):

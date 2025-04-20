@@ -60,3 +60,9 @@ def remove_last_run_config(projects_path, generated_jmh_dir):
                 for dir2 in os.listdir(dir_path):
                     if dir2 == generated_jmh_dir:
                         shutil.rmtree(os.path.join(dir_path, dir2))
+
+def remove_existing_package_statement(java_code: str) -> str:
+    """
+    Removes the first occurrence of a 'package' declaration in the Java code.
+    """
+    return re.sub(r'^\s*package\s+[\w\.]+;\s*', '', java_code, count=1, flags=re.MULTILINE)

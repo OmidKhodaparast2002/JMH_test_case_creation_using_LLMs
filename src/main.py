@@ -13,7 +13,7 @@ def main():
     project_configuration.configure_projects(projects, configs.JMH_POM_TEMPLATE, configs.GENERATED_MICROBENCHMARKS_DIR)
     static_analysis.run_analysis_on_projects(projects)
     data_collection.write_collected_data_in_json(projects, collection_path)
-    microbenchmarks_creation.create_microbenchmarks(projects, configs.PROMPT_ONE, configs.API_KEY, 
+    microbenchmarks_creation.create_microbenchmarks(projects, configs.PROMPT_TWO, configs.API_KEY, 
                 configs.INTERFACE_FOUND, configs.ABSTRACT_CLASS_FOUND, configs.CODE_NOT_GENERATED, configs.API_ERROR, 
                 configs.UNKNOWN_ERROR, configs.MAX_RETRIES)
     data_collection.write_collected_data_in_json(projects, collection_path)

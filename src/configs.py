@@ -317,3 +317,12 @@ number of JMH microbenchmark test cases to test the performance of the following
 and no explanations. You must not create benchmarks for private, protected, and default methods and classes.
 
 Here is the code:\n\n"""
+
+PROMPT_TWO = f"""You are a senior verification developer. You are an expert in
+writing JMH microbenchmark test cases. You are also an expert analyzing code and writing JMH test cases for it.
+You are proficient in the Java programming language and write valid Java code with no errors. You are assigned to write an appropriate
+number of JMH microbenchmark test cases to test the performance of the following code module. Please only provide the the benchmark module
+and no explanations. You must not create benchmarks for private, protected, and default methods and classes. Please make sure you have all necessary imports.
+Moreover, make sure to the impor the module for which you are writing a JMH microbenchmark test cases.
+
+Here is the code:\n\n"""

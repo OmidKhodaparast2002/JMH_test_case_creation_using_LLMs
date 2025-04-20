@@ -83,6 +83,7 @@ def create_microbenchmarks(projects, prompt_str, api_key, interface_found_str, a
 
             try:
                 test = prompt_llm(prompt, api_key, interface_found_str, abstract_found_str)
+                utils.remove_existing_package_statement(test)
                 module["test_code"] = test
             except RateLimitError as e:
                 print(e)
