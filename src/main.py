@@ -6,7 +6,7 @@ they are intended, which consist of three main steps of : setup, generate, analy
 
 from setup import setup
 from generate import generate_benchmarks
-from analysis import setup_configs
+from analysis import setup_configs, compile_and_run_benchmarks
 from utils import read_json
 from pathlib import Path
 
@@ -22,6 +22,7 @@ project_data = setup(
 project_data['projects'][3]['modules'] = project_data['projects'][3]['modules'][0:10]
 project_data['projects'] = [project_data['projects'][3]]
 
-benchmarks = generate_benchmarks(project_data, model_name="mistral")
+#benchmarks = generate_benchmarks(project_data, model_name="mistral")
 
 setup_configs(project_data)
+compile_and_run_benchmarks(project_data)

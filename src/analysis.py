@@ -7,6 +7,7 @@ the result of benchmark executions such as compilation rate, successful run rate
 from pathlib import Path
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+import subprocess
 
 JMH_VERSION = "1.37"
 
@@ -45,10 +46,13 @@ def setup_configs(project_data: dict):
         project_data (dict): projects configuration 
     """
     for project in project_data["projects"]:
-        if project['has_jmh'] == "True":
-            continue
+
+        project_root = Path(project["root_path"])
+
+        
 
         if project['has_maven'] == "True":
+            project["project_classpath"] = get_maven_classpath(project_root)
             pom_path = project['parent_pom_path']
             tree = ET.parse(pom_path)
             root = tree.getroot()
@@ -104,26 +108,130 @@ def setup_configs(project_data: dict):
 
             print(f"✅ Injected JMH into: {pom_path}")
 
+        elif project["has_maven"] == "False":
+            project["project_classpath"] = get_gradle_classpath(project_root)
+
+
     return
 
-def compile_benchmarks(project_data:dict):
+def compile_and_run_benchmarks(project_data: dict):
     """
-    This function compiles the llm generated benchmarks and store the results into the report file.
+    This function compiles the LLM-generated benchmarks and stores the success/failure results.
 
     Args:
         project_data (dict): projects configuration
     """
+    for project in project_data['projects']:
+        path_to_benchmarks = Path(project['llm_benchmarks_path'])
+        project_classpath = project['project_classpath']  # Should include project dependencies
+
+        if path_to_benchmarks.is_dir():
+            benchmarks = list(path_to_benchmarks.rglob("*.java"))
+
+            total = 0
+            successful_compile = 0
+            successful_run = 0
+
+            for benchmark_file in benchmarks:
+                total += 1
+                benchmark_path = str(benchmark_file)
+                output_dir = path_to_benchmarks / "compiled"
+                output_dir.mkdir(exist_ok=True)
+
+                try:
+                    # Compile the benchmark
+                    subprocess.run(
+                        [
+                            "javac",
+                            "-cp",
+                            project_classpath,
+                            "-d",
+                            str(output_dir),
+                            benchmark_path,
+                        ],
+                        check=True,
+                        capture_output=True
+                    )
+                    successful_compile += 1
+
+                    # Extract the class name from the file (e.g. BenchmarkFoo.java -> BenchmarkFoo)
+                    class_name = benchmark_file.stem
+                    package = extract_package(benchmark_file)  # helper (see below)
+                    full_class_name = f"{package}.{class_name}" if package else class_name
+
+                    # Run the compiled benchmark
+                    subprocess.run(
+                        [
+                            "java",
+                            "-cp",
+                            f"{output_dir}:{project_classpath}",
+                            "org.openjdk.jmh.Main",
+                            full_class_name
+                        ],
+                        check=True,
+                        capture_output=True
+                    )
+                    successful_run += 1
+
+                except subprocess.CalledProcessError as e:
+                    print(f"[ERROR] Benchmark {benchmark_file.name} failed:\n{e.stderr.decode()}")
+
+            print(
+                f"Project {project['name']}: Total={total}, "
+                f"Compiled={successful_compile}, Ran={successful_run}"
+            )
+
+
     return
 
-def run_benchmarks(project_data:dict):
-    """
-    This function runs the successfully compiled benchmakrks and runs them and store the results into
-    the report file.
+def get_gradle_classpath(project_root: Path) -> str:
+    try:
+        result = subprocess.run(
+            ["./gradlew", "dependencies", "--configuration", "runtimeClasspath"],
+            cwd=project_root,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        
+        # Optional: If you want a machine-usable classpath, create a custom Gradle task
+        # For now, just return compiled classes directory
+        return f"{project_root / 'build/classes/java/main'}"
+    except subprocess.CalledProcessError as e:
+        print(f"Error while generating Gradle classpath: {e.stderr.decode()}")
+        return ""
 
-    Args:
-        project_data (dict): projects configuration
+import subprocess
+
+def get_maven_classpath(project_root: Path) -> str:
+    try:
+        result = subprocess.run(
+            ["mvn", "dependency:build-classpath", "-Dmdep.outputFile=cp.txt"],
+            cwd=project_root,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        classpath_file = project_root / "cp.txt"
+        with open(classpath_file, "r") as f:
+            deps_cp = f.read().strip()
+
+        # Add target/classes to include compiled project classes
+        return f"{deps_cp}:{project_root / 'target/classes'}"
+    except subprocess.CalledProcessError as e:
+        print(f"Error while generating Maven classpath: {e.stderr.decode()}")
+        return ""
+
+
+def extract_package(java_file_path: Path) -> str:
     """
-    return
+    Extracts the package declaration from a .java file.
+    """
+    with java_file_path.open('r') as f:
+        for line in f:
+            if line.strip().startswith("package"):
+                return line.strip().split()[1].rstrip(";")
+    return ""
 
 def compare_code_coverage(project_data:dict):
     """
@@ -144,6 +252,10 @@ def add_report(report_file: Path, report: str):
         report_file (Path): Path to the report file
         report (str): Report content that will be added to the existing report content
     """
+
+    with open(report_file, 'a') as file:
+        file.write(report)
+
     return
 
 
