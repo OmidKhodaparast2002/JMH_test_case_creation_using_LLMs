@@ -261,8 +261,6 @@ def compile_and_execute_microbenchmarks_for_all_projects(projects, generated_mic
                                 no_code_found_str, api_error_str, unknown_error_str, packahe_path, compile_erros_list)
         write_collected_data_in_json(projects, data_collection_path)
 
-import re
-
 def extract_compile_error_types(stderr_output: str, compile_errors_list: list[str]) -> list[str]:
 
     # Normalize case for case-insensitive matching
