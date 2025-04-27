@@ -22,7 +22,7 @@ def read_error_from_file(file_name: str):
         return f.read()
 
 def compile_and_execute_microbenchmarks_for_project(project, generated_microbenchmarks_dir, no_code_found_str, 
-                                                    api_error_str, unknown_error_str, package_path):
+                                                    api_error_str, unknown_error_str, package_path, compile_erros_list):
     counter = 0
     
     modules_with_no_generated_code = 0
@@ -110,7 +110,7 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
                 with open(os.path.join(project["microbenchmarks_path"], class_name + ".java"), "w") as f:
                     code = module["test_code"]
                     # Remove any existing package statement
-                    utils.remove_existing_package_statement(code)
+                    code = utils.remove_existing_package_statement(code)
                     # add package statement
                     code = f"package {package_path};\n" + code
                     f.write(code)
@@ -158,7 +158,7 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
                 module_names_that_did_not_compile.append(module["name"])
                 module["could_not_be_compiled"] = True
 
-                module["compile_errors"] = extract_compile_error_types(err)
+                module["compile_errors"] = extract_compile_error_types(err, compile_erros_list)
                 print(module["compile_errors"])
                 # print("full_error:", err)
                 module["full_compile_error"] = err
@@ -184,7 +184,7 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
                     cwd = root_path
                     jar_dir = os.path.join(generated_microbenchmarks_dir, "build", "libs")
                 
-                command = f"java -jar {jar_dir}/{generated_microbenchmarks_dir}.jar -wi 1 -i 1 -f1"
+                command = f"java -jar {jar_dir}/{generated_microbenchmarks_dir}.jar -wi 0 -i 1 -f1 -to 180"
                 
                 execution_return_code, benchmark_results, execution_error = stream_and_analyze_jmh_output(command, cwd, class_name, package_path)
 
@@ -252,71 +252,29 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
     print("number of benchmarks that executed:", num_of_benchmarks_executed)
     print("----------------------------------------------------")
 
-def compile_and_execute_microbenchmarks_for_all_projects(projects, generated_microbenchmarks_dir, 
-                                    no_code_found_str, api_error_str, unknown_error_str, packahe_path, data_collection_path):
+def compile_and_execute_microbenchmarks_for_all_projects(projects, generated_microbenchmarks_dir, no_code_found_str, api_error_str, 
+                                                         unknown_error_str, packahe_path, data_collection_path, compile_erros_list, projects_to_ignore):
     for project in projects:
+        if project["name"] in projects_to_ignore:
+            continue
         compile_and_execute_microbenchmarks_for_project(project, generated_microbenchmarks_dir,
-                                no_code_found_str, api_error_str, unknown_error_str, packahe_path)
+                                no_code_found_str, api_error_str, unknown_error_str, packahe_path, compile_erros_list)
         write_collected_data_in_json(projects, data_collection_path)
 
 import re
 
-def extract_compile_error_types(stderr_output: str) -> list[str]:
-    # List of known compile-time errors (case-insensitive)
-    known_errors = [
-        "cannot find symbol",
-        "method does not override or implement a method from a supertype",
-        "incompatible types",
-        "package does not exist",
-        "class, interface, or enum expected",
-        "illegal start of type",
-        "reached end of file while parsing",
-        "missing return statement",
-        "unclosed string literal",
-        "variable might not have been initialized",
-        "cannot be applied to given types",
-        "constructor not defined",
-        "no suitable constructor found",
-        "array required but",
-        "inconvertible types",
-        "unexpected type",
-        "non-static variable cannot be referenced from a static context",
-        "unreachable statement",
-        "illegal start of expression",
-        "modifier static not allowed here",
-        "enum types may not be instantiated",
-        "reference to variable is ambiguous",
-        "class, interface, enum, or record expected",
-        "has private access",
-        "has protected access",
-        "has default access",
-        "annotation type not applicable",
-        "';' expected",
-        "'{' expected",
-        "'}' expected",
-        "')' expected",
-        "'(' expected",
-        "illegal start of expression",
-        "class expected",
-        "expression expected",
-        "not a statement",
-        "invalid method declaration",
-        "identifier expected",
-        "unexpected token",
-        "unclosed character literal",
-        "class, enum, interface, or record expected",
-    ]
+def extract_compile_error_types(stderr_output: str, compile_errors_list: list[str]) -> list[str]:
 
     # Normalize case for case-insensitive matching
     output_lower = stderr_output.lower()
 
     # Match each known error
     matched_errors = []
-    for err in known_errors:
+    for err in compile_errors_list:
         if err.lower() in output_lower:
             matched_errors.append(err)
 
-    return matched_errors if matched_errors else ["Unknown Error"]
+    return matched_errors if matched_errors else ["Other Category"]
 
 def stream_and_analyze_jmh_output(command, cwd, class_name, package_path, timeout_minutes=20):
     benchmark_results = []
@@ -324,6 +282,7 @@ def stream_and_analyze_jmh_output(command, cwd, class_name, package_path, timeou
     collected_lines = []
     timeout_seconds = timeout_minutes * 60
     time_out_reached = False
+    stderr_output = ""
 
     pattern = re.compile(rf"# Benchmark:\s+{re.escape(package_path)}\.{re.escape(class_name)}\.(\w+)")
 
@@ -358,6 +317,8 @@ def stream_and_analyze_jmh_output(command, cwd, class_name, package_path, timeou
                 res = flush(current_benchmark, collected_lines)
                 if res:
                     benchmark_results.append(res)
+            
+            stderr_output = proc.stderr.read()
 
         proc.wait()
 
@@ -373,10 +334,13 @@ def stream_and_analyze_jmh_output(command, cwd, class_name, package_path, timeou
 
         print(f"Execution return code: {proc.returncode}")
         if proc.returncode != 0:
-            print("error in jmh jar execution:", proc.stderr.read())
-            return proc.returncode, [], proc.stderr.read()
+            print("error in jmh jar execution:", stderr_output)
+            return proc.returncode, [], stderr_output
         return proc.returncode, list(deduped.values()), None
 
+    except KeyboardInterrupt:
+        proc.kill()
+        return -1, benchmark_results, "JMH blcoked"
     except Exception as e:
         print(f"Failed to stream benchmark output: {str(e)}")
         return -1, [], "Popen failed"

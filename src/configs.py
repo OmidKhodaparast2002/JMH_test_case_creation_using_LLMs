@@ -323,6 +323,65 @@ writing JMH microbenchmark test cases. You are also an expert analyzing code and
 You are proficient in the Java programming language and write valid Java code with no errors. You are assigned to write an appropriate
 number of JMH microbenchmark test cases to test the performance of the following code module. Please only provide the the benchmark module
 and no explanations. You must not create benchmarks for private, protected, and default methods and classes. Please make sure you have all necessary imports.
-Moreover, make sure to the impor the module for which you are writing a JMH microbenchmark test cases.
+Moreover, make sure to import the module for which you are writing a JMH microbenchmark test cases.
 
 Here is the code:\n\n"""
+
+PROMPT_THREE = f"""You are a senior verification developer. You are an expert in
+writing JMH microbenchmark test cases. You are also an expert analyzing code and writing JMH test cases for it.
+You are proficient in the Java programming language and write valid Java code with no errors. You are assigned to write an appropriate
+number of JMH microbenchmark test cases to test the performance of the following code module:
+
+please apply the following instructions while writing the test cases:
+-       do not create benchmarks for private, protected, and default methods and classes
+-       please import all the import that the modules uses, and all imports needed for the test case to compile and run correctly
+-       please make sure you import the module for which you are writing a JMH microbenchmark test cases
+-       please do not write a package statement.
+-       please make sure you write valid Java code with no syntax errors.
+-       In the output, please only provide the code that you have written and no explanations.
+
+Here is the code:\n\n"""
+
+LIST_OF_COMPILE_ERRORS = [
+    "cannot find symbol",
+    "method does not override or implement a method from a supertype",
+    "incompatible types",
+    "package does not exist",
+    "class, interface, or enum expected",
+    "illegal start of type",
+    "reached end of file while parsing",
+    "missing return statement",
+    "unclosed string literal",
+    "variable might not have been initialized",
+    "cannot be applied to given types",
+    "constructor not defined",
+    "no suitable constructor found",
+    "array required but",
+    "inconvertible types",
+    "unexpected type",
+    "non-static variable cannot be referenced from a static context",
+    "unreachable statement",
+    "illegal start of expression",
+    "modifier static not allowed here",
+    "enum types may not be instantiated",
+    "reference to variable is ambiguous",
+    "class, interface, enum, or record expected",
+    "has private access",
+    "has protected access",
+    "has default access",
+    "annotation type not applicable",
+    "';' expected",
+    "'{' expected",
+    "'}' expected",
+    "')' expected",
+    "'(' expected",
+    "illegal start of expression",
+    "class expected",
+    "expression expected",
+    "not a statement",
+    "invalid method declaration",
+    "identifier expected",
+    "unexpected token",
+    "unclosed character literal",
+    "class, enum, interface, or record expected",
+]
