@@ -179,7 +179,7 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
                     cwd = root_path
                     jar_dir = os.path.join(generated_microbenchmarks_dir, "build", "libs")
                 
-                command = f"java -jar {jar_dir}/{generated_microbenchmarks_dir}.jar -wi 0 -i 1 -f1 -to 180"
+                command = f"java -Xms2g -Xmx4g -jar {jar_dir}/{generated_microbenchmarks_dir}.jar -wi 0 -i 1 -f1 -to 60"
                 
                 execution_return_code, benchmark_results, execution_error = stream_and_analyze_jmh_output(command, cwd, class_name, package_path)
 
