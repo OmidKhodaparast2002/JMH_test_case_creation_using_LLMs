@@ -226,6 +226,7 @@ PROJECTS_INFO = [
         "analysis_path": os.path.join("..", "projects", "Java", "src", "main", "java", "com", "thealgorithms"),
         "modules": [],
         "has_maven": True,
+        "has_jmh": False,
         "maven_install_dirs": [
             os.path.join("..", "projects", "Java")
         ],
@@ -256,6 +257,7 @@ PROJECTS_INFO = [
         "analysis_path": os.path.join("..", "projects", "gson", "gson", "src", "main", "java", "com", "google", "gson"),
         "modules": [],
         "has_maven": True,
+        "has_jmh": False,
         "maven_install_dirs": [
             os.path.join("..", "projects", "gson", "gson")
         ],
@@ -286,6 +288,7 @@ PROJECTS_INFO = [
         "analysis_path": os.path.join("..", "projects", "jjwt", "impl", "src", "main", "java", "io", "jsonwebtoken", "impl"),
         "modules": [],
         "has_maven": True,
+        "has_jmh": False,
         "maven_install_dirs": [
             os.path.join("..", "projects", "jjwt")
         ],
