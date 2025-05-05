@@ -5,7 +5,6 @@ import re
 from typing import Dict, List
 import shlex
 import time
-import threading
 
 # We use this when subprocess.run() throws an exception other than CalledProcessError
 NOT_RUN_EXCEPTION_ERR_STR = "SOMETHING WENT WRONG"
@@ -16,10 +15,6 @@ def write_collected_data_in_json(projects, path):
         
     for project in projects:
         utils.write_json(project, os.path.join(path, project["name"] + ".json"))
-
-def read_error_from_file(file_name: str):
-    with open(file_name, "r") as f:
-        return f.read()
 
 def compile_and_execute_microbenchmarks_for_project(project, generated_microbenchmarks_dir, no_code_found_str, 
                                                     api_error_str, unknown_error_str, package_path, compile_erros_list):
@@ -58,9 +53,9 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
     # Activate the Java version for this project
     if "java_version" in project:
         try:
-            if not is_java_version_installed(project["java_version"]):
-                install_java_version(project["java_version"])
-            activate_java_version(project["java_version"])
+            if not utils.is_java_version_installed(project["java_version"]):
+                utils.install_java_version(project["java_version"])
+            utils.activate_java_version(project["java_version"])
         except Exception as e:
             print(f"Failed to activate Java version for {project['name']} project: {e}")
             return
@@ -118,7 +113,7 @@ def compile_and_execute_microbenchmarks_for_project(project, generated_microbenc
                 print(f"Failed to write to {module['name']} {project['microbenchmarks_path']}: {e}")
                 continue
 
-            benchamrks = extract_benchmark_names(module["test_code"])
+            benchamrks = utils.extract_benchmark_names(module["test_code"])
             module["benchmarks"] = benchamrks
 
             try:
@@ -262,16 +257,10 @@ def compile_and_execute_microbenchmarks_for_all_projects(projects, generated_mic
         write_collected_data_in_json(projects, data_collection_path)
 
 def extract_compile_error_types(stderr_output: str, compile_errors_list: list[str]) -> list[str]:
-
-    # Normalize case for case-insensitive matching
-    output_lower = stderr_output.lower()
-
-    # Match each known error
     matched_errors = []
-    for err in compile_errors_list:
-        if err.lower() in output_lower:
-            matched_errors.append(err)
-
+    for pattern in compile_errors_list:
+        if re.search(pattern, stderr_output, flags=re.IGNORECASE):
+            matched_errors.append(pattern)
     return matched_errors if matched_errors else ["Other Category"]
 
 def stream_and_analyze_jmh_output(command, cwd, class_name, package_path, timeout_minutes=20):
@@ -370,44 +359,4 @@ def parse_benchmark_result(lines):
             return True, ""
     return False, "NoIterationDetected"
 
-def is_java_version_installed(java_version: str) -> bool:
-    return os.path.exists(os.path.expanduser(f"~/.sdkman/candidates/java/{java_version}"))
 
-def install_java_version(java_version: str):
-    try:
-        subprocess.run(
-            f"bash -c 'source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java {java_version} -y'",
-            shell=True,
-            executable="/bin/bash",
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to install Java {java_version} using SDKMAN:\n{e.stderr}")
-        raise e
-
-def activate_java_version(java_version: str):
-    try:
-        subprocess.run(
-            f"bash -c 'source $HOME/.sdkman/bin/sdkman-init.sh && sdk default java {java_version}'",
-            shell=True,
-            executable="/bin/bash",
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        # see if java -version works
-        subprocess.run(["java", "-version"], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to switch to Java {java_version} using SDKMAN:\n{e.stderr}")
-        raise e
-
-def extract_benchmark_names(java_source: str) -> List[str]:
-    pattern = re.compile(
-        r"@Benchmark\b.*?(?:public|protected|private)?\s+\w[\w<>\[\]]*\s+(\w+)\s*\(",
-        re.DOTALL
-    )
-    return pattern.findall(java_source)

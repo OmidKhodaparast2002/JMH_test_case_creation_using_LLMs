@@ -2,6 +2,8 @@ import os
 import json
 import re
 import shutil
+import subprocess
+from typing import List
 
 def folder_exists(folder_path):
     return os.path.exists(folder_path)
@@ -66,3 +68,45 @@ def remove_existing_package_statement(java_code: str) -> str:
     Removes the first occurrence of a 'package' declaration in the Java code.
     """
     return re.sub(r'^\s*package\s+[\w\.]+;\s*', '', java_code, count=1, flags=re.MULTILINE)
+
+def is_java_version_installed(java_version: str) -> bool:
+    return os.path.exists(os.path.expanduser(f"~/.sdkman/candidates/java/{java_version}"))
+
+def install_java_version(java_version: str):
+    try:
+        subprocess.run(
+            f"bash -c 'source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java {java_version} -y'",
+            shell=True,
+            executable="/bin/bash",
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install Java {java_version} using SDKMAN:\n{e.stderr}")
+        raise e
+
+def activate_java_version(java_version: str):
+    try:
+        subprocess.run(
+            f"bash -c 'source $HOME/.sdkman/bin/sdkman-init.sh && sdk default java {java_version}'",
+            shell=True,
+            executable="/bin/bash",
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        # see if java -version works
+        subprocess.run(["java", "-version"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to switch to Java {java_version} using SDKMAN:\n{e.stderr}")
+        raise e
+
+def extract_benchmark_names(java_source: str) -> List[str]:
+    pattern = re.compile(
+        r"@Benchmark\b.*?(?:public|protected|private)?\s+\w[\w<>\[\]]*\s+(\w+)\s*\(",
+        re.DOTALL
+    )
+    return pattern.findall(java_source)

@@ -1,6 +1,6 @@
 import re
 import os
-
+import utils
 import javalang
 import re
 
@@ -81,3 +81,25 @@ def run_analysis_on_projects(projects):
     for project in projects:
         print(f"Running static analysis on {project['name']}...")
         run_analysis(project, project["analysis_path"])
+
+def gather_project_jmh_data(projects):
+    for project in projects:
+        number_of_bnehcmark_suits = 0
+        number_of_benchmarks = 0
+        if project["has_jmh"]:
+            for root, dirs, files in os.walk(project["jmh_path"]):
+                for file in files:
+                    if file.endswith(".java"):
+                        number_of_bnehcmark_suits += 1
+                        try:
+                            with open(os.path.join(root, file), "r") as f:
+                                code = f.read()
+                                benchmarks = utils.extract_benchmark_names(code)
+                                number_of_benchmarks += len(benchmarks)
+                        except Exception as e:
+                            print(f"Failed to read {file}: {e}")
+        project["number_of_benchmarks"] = number_of_benchmarks
+        project["number_of_benchmarks_suits"] = number_of_bnehcmark_suits
+
+    return projects
+
