@@ -53,7 +53,7 @@ def main():
 
     if args.analysis:
         projects = utils.read_projects(collection_path, configs.PROJECT_NAMES)
-        data_analysis.run_analysis_on_projects(projects, collection_path)
+        data_analysis.find_most_frequent_compile_errors(projects, configs.LIST_OF_COMPILE_ERRORS)
 
 
 if __name__ == "__main__":
