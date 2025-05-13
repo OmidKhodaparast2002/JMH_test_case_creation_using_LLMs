@@ -5,9 +5,14 @@ import re
 from typing import Dict, List
 import shlex
 import time
+import threading
 
 # We use this when subprocess.run() throws an exception other than CalledProcessError
 NOT_RUN_EXCEPTION_ERR_STR = "SOMETHING WENT WRONG"
+# This timeout is used to kill JMH process if no output is received
+JMH_TIMEOUT_SECONDS = 120
+# This time is used as the thread check interval
+CHECK_INTERVAL = 10
 
 def write_collected_data_in_json(projects, path):
     if not utils.folder_exists(path):
@@ -270,13 +275,30 @@ def stream_and_analyze_jmh_output(command, cwd, class_name, package_path, timeou
     timeout_seconds = timeout_minutes * 60
     time_out_reached = False
     stderr_output = ""
+    last_output_time = time.time()
+    watchdog_triggered = threading.Event()
 
     pattern = re.compile(rf"# Benchmark:\s+{re.escape(package_path)}\.{re.escape(class_name)}\.(\w+)")
+
+    def watchdog(proc, check_interval=CHECK_INTERVAL, timeout_without_output=JMH_TIMEOUT_SECONDS):
+        nonlocal last_output_time
+        while proc.poll() is None:
+            time.sleep(check_interval)
+            if time.time() - last_output_time > timeout_without_output:
+                print(f"[Watchdog] No output for {timeout_without_output} seconds. Killing JMH process...")
+                proc.kill()
+                watchdog_triggered.set()
+                break
 
     start_time = time.time()
 
     try:
         with subprocess.Popen(shlex.split(command), cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, env=os.environ) as proc:
+
+            # Start watchdog thread
+            monitor = threading.Thread(target=watchdog, args=(proc,))
+            monitor.daemon = True
+            monitor.start()
 
             for line in proc.stdout:
                 elasped_time = time.time() - start_time
@@ -284,7 +306,8 @@ def stream_and_analyze_jmh_output(command, cwd, class_name, package_path, timeou
                     time_out_reached = True
                     proc.kill()
                     break
-
+                
+                last_output_time = time.time()
 
                 print(line.strip())  # Optional: for real-time logging
                 match = pattern.match(line)
@@ -308,6 +331,9 @@ def stream_and_analyze_jmh_output(command, cwd, class_name, package_path, timeou
             stderr_output = proc.stderr.read()
 
         proc.wait()
+
+        if watchdog_triggered.is_set():
+            return -1, benchmark_results, "JMH blocked"
 
         if time_out_reached:
             return -1, benchmark_results, "Timeout reached"
