@@ -276,7 +276,7 @@ PROJECTS_INFO = [
             {
                 "artifactId": "gson",
                 "groupId": "com.google.code.gson",
-                "version": "2.12.2-SNAPSHOT"
+                "version": "2.13.2-SNAPSHOT"
             }
         ],
         "java_version": "17.0.14-tem"
