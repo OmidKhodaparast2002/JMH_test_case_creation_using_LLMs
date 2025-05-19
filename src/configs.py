@@ -3,8 +3,8 @@ import os
 
 load_dotenv()
 
-GENERATED_MICROBENCHMARKS_DIR = "generated_jmh"
 PACKAGE_NAME = "org.ai.bench.jmh.generated"
+GENERATED_MICROBENCHMARKS_DIR = "generated_jmh"
 JMH_POM_TEMPLATE = f"""<?xml version="1.0" encoding="UTF-8"?>
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -167,10 +167,16 @@ PROJECTS_INFO = [
         "ssh_url": "https://github.com/apache/logging-log4j2.git",
         "root_path": os.path.join("..", "projects", "logging-log4j2"),
         "analysis_path": os.path.join("..", "projects", "logging-log4j2", "log4j-core", "src", "main", "java", "org", "apache", "logging", "log4j", "core"),
+        "class_path": os.path.join("log4j-core", "target", "classes"),
+        "source_path": os.path.join("log4j-core", "src", "main", "java"),
+        "jmh_root_dir_name": "log4j-perf-test",
         "modules": [],
         "has_maven": True,
         "has_jmh": True,
         "jmh_path": os.path.join("..", "projects", "logging-log4j2", "log4j-perf-test", "src", "main", "java", "org", "apache", "logging", "log4j", "perf"),
+        "produced_jmh_jar_path": os.path.join("log4j-perf-test", "target"),
+        "jmh_sub_module": "log4j-perf-test",
+        "produced_jmh_jar_name": "log4j-perf-test-2.25.0-SNAPSHOT-uber.jar",
         "maven_install_dirs": [
             os.path.join("..", "projects", "logging-log4j2"),
         ],
@@ -194,10 +200,16 @@ PROJECTS_INFO = [
         "ssh_url": "https://github.com/apache/kafka.git",
         "root_path": os.path.join("..", "projects", "kafka"),
         "analysis_path": os.path.join("..", "projects", "kafka", "clients", "src", "main", "java", "org", "apache", "kafka"),
+        "class_path": os.path.join("clients", "build", "classes", "java", "main"),
+        "source_path": os.path.join("clients", "src", "main", "java"),
+        "jmh_root_dir_name": "jmh-benchmarks",
         "has_maven": False,
         "modules": [],
         "has_jmh": True,
         "jmh_path": os.path.join("..", "projects", "kafka", "jmh-benchmarks", "src", "main", "java", "org", "apache", "kafka", "jmh"),
+        "project_jmh_jar_path": os.path.join("jmh-benchmarks", "build", "libs"),
+        "produced_jmh_jar_name": "kafka-jmh-benchmarks-4.1.0-SANAPSHOT-all.jar",
+        "compile_command": "./gradlew :jmh-benchmarks:clean :jmh-benchmarks:shadowJar",
         "gradle_settings_path": os.path.join("..", "projects", "kafka", "settings.gradle"),
         "java_version": "17.0.14-tem",
         "dependency_list": [
@@ -209,10 +221,16 @@ PROJECTS_INFO = [
         "ssh_url": "https://github.com/ReactiveX/RxJava.git",
         "root_path": os.path.join("..", "projects", "RxJava"),
         "analysis_path": os.path.join("..", "projects", "RxJava", "src", "main", "java", "io", "reactivex", "rxjava3"),
+        "class_path": os.path.join("build", "classes", "java", "main"),
+        "source_path": os.path.join("src", "main", "java"),
+        "jmh_root_dir_name": "src",
         "has_maven": False,
         "modules": [],
         "has_jmh": True,
         "jmh_path": os.path.join("..", "projects", "RxJava", "src", "jmh", "java", "io", "reactivex", "rxjava3"),
+        "project_jmh_jar_path": os.path.join("build", "libs"),
+        "produced_jmh_jar_name": "rxjava-3.0.0-SNAPSHOT-jmh.jar",
+        "compile_command": "./gradlew :jmhJar",
         "gradle_settings_path": os.path.join("..", "projects", "RxJava", "settings.gradle"),
         "java_version": "8.0.442-tem",
         "dependency_list": [

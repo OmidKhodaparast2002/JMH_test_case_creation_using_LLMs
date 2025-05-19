@@ -110,3 +110,17 @@ def extract_benchmark_names(java_source: str) -> List[str]:
         re.DOTALL
     )
     return pattern.findall(java_source)
+
+def merge_dicts(dict1, dict2):
+    
+    for key, value in dict2.items():
+        if key not in dict1:
+            dict1[key] = value
+
+    return dict1
+
+def update_projects_attributes(projects, new_projects_attributes):
+    for project in projects:
+        for new_project in new_projects_attributes:
+            if project["name"] == new_project["name"]:
+                merge_dicts(project, new_project)

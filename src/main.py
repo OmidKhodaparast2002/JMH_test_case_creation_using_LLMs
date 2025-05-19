@@ -21,8 +21,16 @@ def main():
     parser.add_argument("-a", "--analysis", action="store_true", help="This command analyzes collected data")
     parser.add_argument("-p", "--projects-to-ignore", nargs='+', default=[], help="This command takes a list of projects to ignore during data collection")
     parser.add_argument("-b", "--benchmark-analysis", action="store_true", help="This command runs benchmark analysis on the projects")
+    parser.add_argument("-j", "--jacoco-coverage", action="store_true", help="This command runs jacoco coverage analysis on the projects that have human-written jmh microbenchmarks")
+    parser.add_argument("-u", "--update-projects", action="store_true", help="This command updates the projects' dictinoary attributes ad ads new ones from the changes made to configs.py")
 
     args = parser.parse_args()
+
+    if args.update_projects:
+        print("Updating projects...")
+        projects = utils.read_projects(collection_path, configs.PROJECT_NAMES)
+        utils.update_projects_attributes(projects, configs.PROJECTS_INFO)
+        data_collection.write_collected_data_in_json(projects, collection_path)
 
     if args.config:
         clone.clone_projects(configs.PROJECTS_PATH, projects, configs.GENERATED_MICROBENCHMARKS_DIR)
@@ -50,6 +58,10 @@ def main():
                     configs.CODE_NOT_GENERATED, configs.API_ERROR, configs.UNKNOWN_ERROR, configs.PACKAGE_NAME, collection_path, 
                     configs.LIST_OF_COMPILE_ERRORS, args.projects_to_ignore)
         data_collection.write_collected_data_in_json(projects, collection_path)
+    
+    if args.jacoco_coverage:
+        projects = utils.read_projects(collection_path, configs.PROJECT_NAMES)
+        data_collection.collect_coverage_on_projects_with_jmh(projects, configs.GENERATED_MICROBENCHMARKS_DIR, args.projects_to_ignore, configs.PACKAGE_NAME)
 
     if args.analysis:
         projects = utils.read_projects(collection_path, configs.PROJECT_NAMES)

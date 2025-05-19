@@ -6,6 +6,8 @@ from typing import Dict, List
 import shlex
 import time
 import threading
+import random
+import shutil
 
 # We use this when subprocess.run() throws an exception other than CalledProcessError
 NOT_RUN_EXCEPTION_ERR_STR = "SOMETHING WENT WRONG"
@@ -385,4 +387,324 @@ def parse_benchmark_result(lines):
             return True, ""
     return False, "NoIterationDetected"
 
+def collect_coverage_on_projects_with_jmh(projects, generated_microbenchmarks_dir, projects_to_ignore, package_path):
+    for project in projects:
+        if project["name"] in projects_to_ignore:
+            continue
+        if project["has_jmh"]:
+            collect_coverage_on_one_project(project, generated_microbenchmarks_dir, package_path)
 
+def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, package_path):
+    has_maven = project["has_maven"]
+    root_path = project["root_path"]
+    jacoco_exec_save_path_human = os.path.join("exec", "human_written", "jacoco-jmh.exec")
+    jacoco_exec_save_path_llm = os.path.join("exec", "llm_written", "jacoco-jmh.exec")
+    report_os_save_path_llm = os.path.join("..", "data", "coverage", project["name"], "llm")
+    report_os_save_path_human = os.path.join("..", "data", "coverage", project["name"], "human")
+    jacoco_report_save_path_llm = os.path.join("..", "..", "data", "collected", "coverage", project["name"], "llm")
+    jacoco_report_save_path_human = os.path.join("..", "..", "data", "collected", "coverage", project["name"], "human")
+
+    project_class_path = project["class_path"]
+    project_source_path = project["source_path"]
+
+    cwd = root_path
+    jar_dir = None
+
+    jmh_root_dir_name = project["jmh_root_dir_name"]
+    jmh_root_dir_name_copy = jmh_root_dir_name + "-copy"
+
+    # Create folders where the html report will be saved
+    os.makedirs(report_os_save_path_llm, exist_ok=True)
+    os.makedirs(report_os_save_path_human, exist_ok=True)
+
+    # Create folders for saving jacoco exec
+    os.makedirs(os.path.join(root_path, "exec", "human_written"), exist_ok=True)
+    os.makedirs(os.path.join(root_path, "exec", "llm_written"), exist_ok=True)
+
+    # Get java agent
+    java_agent_human = f"-javaagent:{os.path.expanduser(os.path.join("~", "jacoco", "lib", "jacocoagent.jar"))}=destfile={jacoco_exec_save_path_human}"
+    java_agent_llm = f"-javaagent:{os.path.expanduser(os.path.join("~", "jacoco", "lib", "jacocoagent.jar"))}=destfile={jacoco_exec_save_path_llm}"
+    # get Jacoco cli
+    jacoco_cli_path = f"{os.path.expanduser(os.path.join("~", "jacoco", "lib", "jacococli.jar"))}"
+
+    print(f"Collecting coverage for {project['name']} project")
+    
+    # Activate the Java version for this project
+    if "java_version" in project:
+        try:
+            if not utils.is_java_version_installed(project["java_version"]):
+                utils.install_java_version(project["java_version"])
+            utils.activate_java_version(project["java_version"])
+        except Exception as e:
+            print(f"Failed to activate Java version for {project['name']} project: {e}")
+            return
+
+        if "JAVA_HOME" not in os.environ:
+            os.environ["JAVA_HOME"] = os.path.expanduser("~/.sdkman/candidates/java/current")
+            os.environ["PATH"] = os.path.join(os.environ["JAVA_HOME"], "bin") + ":" + os.environ["PATH"]
+    
+    if "JAVA_HOME" not in os.environ:
+        os.environ["JAVA_HOME"] = os.path.expanduser("~/.sdkman/candidates/java/current")
+        os.environ["PATH"] = os.path.join(os.environ["JAVA_HOME"], "bin") + ":" + os.environ["PATH"]
+
+    # Install all project before moving on
+    if has_maven:
+        try: 
+            subprocess.run(
+                ["mvn", "clean", "install", "-DskipTests", "-Drat.skip=true", "-Dbnd.baseline.skip=true", "-Dspotless.check.skip=true"],
+                cwd=root_path,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True,
+            )
+        except Exception as e:
+            print(f"Failed to install {project['name']} project: {str(e)}")
+            return
+    else:
+        try:
+            subprocess.run(["./gradlew", "clean", "classes"], 
+                cwd=root_path, 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE, 
+                text=True, 
+                check=True)
+        except Exception as e:
+            print(f"Failed to install {project['name']} project: {str(e)}")
+            return
+        
+    # create a jar file containing the class path of the directory we want coverage on
+    try:
+        subprocess.run(["bash", "-c", f"jar -cf {project['name']}.jar -C {project_class_path} ."], 
+            cwd=root_path, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, 
+            text=True, 
+            check=True)
+        
+        print(f"Created jar file for {project['name']} project")
+    except Exception as e:
+        print(f"Failed to create jar file for {project['name']} project: {str(e)}")
+        return
+    
+    # create a copy of project's jmh directory
+    try:
+        shutil.copytree(os.path.join(root_path, jmh_root_dir_name), os.path.join(root_path, jmh_root_dir_name_copy))
+    except Exception as e:
+        print(f"Failed to copy jmh directory for {project['name']} project: {str(e)}")
+    
+    pick_microbenhmark_suits_for_coverage(project, package_path)
+
+    # Compile generated micorbenchmarks
+    try: 
+        if has_maven:
+            subprocess.run(
+                ["mvn", "clean", "verify", "-Drat.skip=true", "-Dbnd.baseline.skip=true", "-Dspotless.check.skip=true"],
+                cwd=os.path.join(root_path, generated_microbenchmarks_dir),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=os.environ,
+                text=True,
+                check=True
+            )
+        else:
+            subprocess.run(
+                ["./gradlew", f":{generated_microbenchmarks_dir}:clean", 
+                 f":{generated_microbenchmarks_dir}:jmhJar", "--info", "--no-daemon"],
+                cwd=root_path,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=os.environ,
+                text=True,
+                check=True
+            )
+    except Exception as e:
+        print(f"Failed to compile generated microbenchmarks for {project['name']} project: {str(e)}")
+        return
+    
+    # Compile project's own jmh
+    try:
+        if has_maven:
+            subprocess.run(
+                ["mvn", "clean", "verify", "-Drat.skip=true", "-Dbnd.baseline.skip=true", "-Dspotless.check.skip=true"],
+                cwd=os.path.join(root_path, project["jmh_sub_module"]),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=os.environ,
+                text=True,
+                check=True
+            )
+        else:
+            subprocess.run(
+                shlex.split(project["compile_command"]),
+                cwd=root_path,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=os.environ,
+                text=True,
+                check=True
+            )
+    except Exception as e:
+        print(f"Failed to compile project's own jmh for {project['name']} project: {str(e)}")
+        return
+    
+    # execute llm generated microbenchmarks
+    if has_maven:
+        jar_dir = os.path.join(generated_microbenchmarks_dir, "target")
+    else:
+        jar_dir = os.path.join(generated_microbenchmarks_dir, "build", "libs")
+    
+    execution_command = f"java -Djacoco.debug=true -Xms2g -Xmx4g {java_agent_llm} -cp {project["name"]}.jar:{os.path.join(jar_dir, generated_microbenchmarks_dir + ".jar")} org.openjdk.jmh.Main -wi 0 -i 1 -f0 -to 60"
+    try:
+        with subprocess.Popen(shlex.split(execution_command), cwd=cwd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, env=os.environ) as process:
+            
+            for line in process.stdout:
+                print(line.strip())
+    except Exception as e:
+        print(f"Failed to execute generated microbenchmarks for {project['name']} project: {str(e)}")
+        return
+    
+    # check the exec file
+    try:
+        print("checking exec file for llm generated microbenchmarks")
+        with subprocess.Popen(["java", "-jar", jacoco_cli_path, "execinfo", jacoco_exec_save_path_llm],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True) as process:
+
+            for line in process.stdout:
+                print(line.strip())
+
+    except Exception as e:
+        print(f"Failed to check generated microbenchmarks for {project['name']} project: {str(e)}")
+        return
+
+    # execute project's own jmh
+    jar_dir = project["project_jmh_jar_path"]
+
+    execution_command = f"java -Djacoco.debug=true -Xms2g -Xmx4g {java_agent_human} -cp {project["name"]}.jar:{os.path.join(jar_dir, project["product_jmh_jar_name"])} org.openjdk.jmh.Main -wi 0 -i 1 -f0 -to 60"
+    try:
+        with subprocess.Popen(shlex.split(execution_command), cwd=cwd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, env=os.environ) as process:
+            
+            for line in process.stdout:
+                print(line.strip())
+    except Exception as e:
+        print(f"Failed to execute project's own jmh for {project['name']} project: {str(e)}")
+        return
+    
+    # check the exec file
+    try:
+        print("checking exec file for project's own jmh")
+        with subprocess.Popen(["java", "-jar", jacoco_cli_path, "execinfo", jacoco_exec_save_path_human],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True) as process:
+
+            for line in process.stdout:
+                print(line.strip())
+    except Exception as e:
+        print(f"Failed to check generated microbenchmarks for {project['name']} project: {str(e)}")
+        return
+    
+    # generate jacoco report for llm generated microbenchmarks
+    execution_command = f"java -Xms2g -Xmx4g -jar {jacoco_cli_path} report {jacoco_exec_save_path_llm} --classfiles {project_class_path} --sourcefiles {project_source_path} --html {jacoco_report_save_path_llm}"
+    try:
+        with subprocess.Popen(shlex.split(execution_command), cwd=cwd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, env=os.environ) as process:
+            
+            for line in process.stdout:
+                print(line.strip())
+    except Exception as e:
+        print(f"Failed to generate jacoco report for llm generated microbenchmarks for {project['name']} project: {str(e)}")
+        return
+    
+    # generate jacoco report for project's own jmh
+    execution_command = f"java -Xms2g -Xmx4g -jar {jacoco_cli_path} report {jacoco_exec_save_path_human} --classfiles {project["class_path"]} --sourcefiles {project["source_path"]} --html {jacoco_report_save_path_human}"
+    try:
+        with subprocess.Popen(shlex.split(execution_command), cwd=cwd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, env=os.environ) as process:
+            
+            for line in process.stdout:
+                print(line.strip())
+    except Exception as e:
+        print(f"Failed to generate jacoco report for project's own jmh for {project['name']} project: {str(e)}")
+        return
+    
+    # The project jmh root copy becomes the actual one and we delete the one we used for execution
+    try:
+        shutil.rmtree(os.path.join(root_path, jmh_root_dir_name))
+        os.rename(os.path.join(root_path, jmh_root_dir_name_copy), os.path.join(root_path, jmh_root_dir_name))
+    except Exception as e:
+        print(f"Failed to delete {jmh_root_dir_name} for {project['name']} project: {str(e)}")
+        return
+
+    print(f"Successfully gathered coverage data for {project['name']} project\n\n")
+
+def pick_microbenhmark_suits_for_coverage(project: dict, package_path):
+    human_written_micorbenchmark_suits_num = project.get("number_of_benchmarks_suits", None)
+    generated_benchmarks_suits_num = project.get("modules_compiled", None)
+    human_written_benchmark_suits_path = project.get("jmh_path", None)
+
+
+    if human_written_micorbenchmark_suits_num is None or generated_benchmarks_suits_num is None or human_written_benchmark_suits_path is None:
+        print("Not enough information to write microbenchmark suits")
+        raise DicAttDoesNotExist("Not enough information to write microbenchmark suits")
+    
+    if human_written_micorbenchmark_suits_num > generated_benchmarks_suits_num:
+        print("more human written microbenchmarks than generated ones")
+        pick_random_human_written_microbenchmark_suits(human_written_benchmark_suits_path, generated_benchmarks_suits_num)
+    else:
+        print("more generated microbenchmarks than human written ones")
+        pick_random_generated_microbenchmark_suits(project, human_written_micorbenchmark_suits_num, package_path)
+
+
+def pick_random_generated_microbenchmark_suits(project, number_suits_needed, package_path):
+    modules_compiled = [module for module in project["modules"] if not module["could_not_be_compiled"]]
+    modules_successfully_executed = [module for module in modules_compiled if not module["could_not_be_executed"]]
+    random.shuffle(modules_successfully_executed)
+    for i in range(number_suits_needed):
+        try:
+            # Extract class name from test code
+            match = re.search(r'\bpublic\s+class\s+([A-Za-z_]\w*)', modules_successfully_executed[i]["test_code"])
+            if match:
+                class_name = match.group(1)
+
+            with open(os.path.join(project["microbenchmarks_path"], class_name + ".java"), "w") as f:
+                code = modules_successfully_executed[i]["test_code"]
+                # Remove any existing package statement
+                code = utils.remove_existing_package_statement(code)
+                # add package statement
+                code = f"package {package_path};\n" + code
+                f.write(code)
+        except Exception as e:
+            print(f"Failed to write to {modules_successfully_executed[i]['name']} {project['microbenchmarks_path']}: {e}")
+            continue
+        
+
+def pick_random_human_written_microbenchmark_suits(jmh_benchmarks_path, number_suits_needed):
+    # Gather all .java files
+    all_files = []
+    for root, dirs, files in os.walk(jmh_benchmarks_path):
+        for file in files:
+            if file.endswith(".java"):
+                all_files.append(os.path.join(root, file))
+
+    # This if statement should never be triggered
+    if number_suits_needed >= len(all_files):
+        print("No files need to be removed — human-written benchmarks are already fewer or equal.")
+        return
+
+    # Shuffle and pick files to keep
+    random.shuffle(all_files)
+    files_to_keep = set(all_files[:number_suits_needed])
+    files_to_remove = [f for f in all_files if f not in files_to_keep]
+
+    # Remove unneeded files
+    for path in files_to_remove:
+        try:
+            os.remove(path)
+        except Exception as e:
+            print(f"Failed to remove {path}: {e}")
+
+class DicAttDoesNotExist(Exception):
+    pass
