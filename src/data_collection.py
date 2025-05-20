@@ -567,15 +567,12 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
     # check the exec file
     try:
         print("checking exec file for llm generated microbenchmarks")
-        with subprocess.Popen(["java", "-jar", jacoco_cli_path, "execinfo", jacoco_exec_save_path_llm],
+        subprocess.run(["java", "-jar", jacoco_cli_path, "execinfo", jacoco_exec_save_path_llm],
+            cwd=root_path,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            check=True) as process:
-
-            for line in process.stdout:
-                print(line.strip())
-
+            check=True)
     except Exception as e:
         print(f"Failed to check generated microbenchmarks for {project['name']} project: {str(e)}")
         return
@@ -596,14 +593,12 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
     # check the exec file
     try:
         print("checking exec file for project's own jmh")
-        with subprocess.Popen(["java", "-jar", jacoco_cli_path, "execinfo", jacoco_exec_save_path_human],
+        subprocess.run(["java", "-jar", jacoco_cli_path, "execinfo", jacoco_exec_save_path_human],
+            cwd=cwd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            check=True) as process:
-
-            for line in process.stdout:
-                print(line.strip())
+            check=True)
     except Exception as e:
         print(f"Failed to check generated microbenchmarks for {project['name']} project: {str(e)}")
         return
