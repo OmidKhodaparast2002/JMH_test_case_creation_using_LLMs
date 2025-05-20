@@ -4,6 +4,7 @@ import re
 import shutil
 import subprocess
 from typing import List
+import data_collection
 
 def folder_exists(folder_path):
     return os.path.exists(folder_path)
@@ -124,3 +125,26 @@ def update_projects_attributes(projects, new_projects_attributes):
         for new_project in new_projects_attributes:
             if project["name"] == new_project["name"]:
                 merge_dicts(project, new_project)
+
+def read_all_data_runs(paths: List[str], project_names: List[str], output_path: str):
+    projects = []
+    
+    for project_name in project_names:
+        run_counter = 0
+        project = {}
+        project["name"] = project_name
+        for path in paths:
+            project_path = os.path.join(path, project_name + ".json")
+            try:
+                with open(project_path, "r") as f:
+                    run_counter += 1
+                    run = json.load(f)
+                    project[f"run_{run_counter}"] = run
+            except Exception as e:
+                print(f"Failed to read {project_path}: {e}")
+
+        projects.append(project)
+
+        data_collection.write_collected_data_in_json(projects, output_path)
+
+    return projects

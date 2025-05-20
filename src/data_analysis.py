@@ -29,3 +29,7 @@ def find_most_frequent_compile_errors(projects: List[Dict], list_of_compile_erro
         print(f"Failed to write to compile_errors.json: {e}")
 
     return sorted_compile_errors
+
+def calc_stat_on_data(projects: List[Dict], project_names: List[str]):
+    pass
+    

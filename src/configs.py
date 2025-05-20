@@ -329,6 +329,12 @@ PROJECTS_INFO = [
 
 PROJECTS_PATH = os.path.join("..", "projects")
 DATA_COLLECTION_PATH = os.path.join("..", "data", "collected")
+DATA_ANALYSIS_PATH = os.path.join("..", "data", "analyzed")
+DATA_COMPACT_PATH = os.path.join("..", "collected_data", "compact")
+FINAL_DATA_PATH = os.path.join("..", "collected_data")
+FINAL_DATA_RUN_PATH = os.path.join("..", "collected_data", "data_run_")
+NUM_OF_RUNS = 10
+FINAL_DATA_RUN_PATHS = [os.path.join("..", "collected_data", "data_run_" + str(i), "collected") for i in range(1, NUM_OF_RUNS + 1)]
 CODE_NOT_GENERATED = "Code not generated"
 INTERFACE_FOUND = "Interface found"
 ABSTRACT_CLASS_FOUND = "Abstract class found"

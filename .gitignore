@@ -9,6 +9,7 @@ __pycache__/
 # folders
 projects/
 data/
+collected_data/
 
 # Distribution / packaging
 .Python

@@ -23,6 +23,7 @@ def main():
     parser.add_argument("-b", "--benchmark-analysis", action="store_true", help="This command runs benchmark analysis on the projects")
     parser.add_argument("-j", "--jacoco-coverage", action="store_true", help="This command runs jacoco coverage analysis on the projects that have human-written jmh microbenchmarks")
     parser.add_argument("-u", "--update-projects", action="store_true", help="This command updates the projects' dictinoary attributes ad ads new ones from the changes made to configs.py")
+    parser.add_argument("-f-a", "--file-analysis", action="store_true", help="This command runs the final analaysis on all the runs of data that have been collected")
 
     args = parser.parse_args()
 
@@ -66,6 +67,9 @@ def main():
     if args.analysis:
         projects = utils.read_projects(collection_path, configs.PROJECT_NAMES)
         data_analysis.find_most_frequent_compile_errors(projects, configs.LIST_OF_COMPILE_ERRORS)
+
+    if args.file_analysis:
+        projects = utils.read_all_data_runs(configs.FINAL_DATA_RUN_PATHS, configs.PROJECT_NAMES, configs.DATA_COMPACT_PATH)
 
 
 if __name__ == "__main__":

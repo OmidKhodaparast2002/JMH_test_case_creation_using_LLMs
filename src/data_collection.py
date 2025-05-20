@@ -582,7 +582,7 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
     # execute project's own jmh
     jar_dir = project["project_jmh_jar_path"]
 
-    execution_command = f"java -Djacoco.debug=true -Xms2g -Xmx4g {java_agent_human} -cp {project["name"]}.jar:{os.path.join(jar_dir, project["product_jmh_jar_name"])} org.openjdk.jmh.Main -wi 0 -i 1 -f0 -to 60"
+    execution_command = f"java -Djacoco.debug=true -Xms2g -Xmx4g {java_agent_human} -cp {project["name"]}.jar:{os.path.join(jar_dir, project["produced_jmh_jar_name"])} org.openjdk.jmh.Main -wi 0 -i 1 -f0 -to 60"
     try:
         with subprocess.Popen(shlex.split(execution_command), cwd=cwd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, env=os.environ) as process:
             
