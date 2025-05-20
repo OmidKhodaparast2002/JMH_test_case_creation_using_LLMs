@@ -560,6 +560,8 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
             
             for line in process.stdout:
                 print(line.strip())
+            
+            process.wait()
     except Exception as e:
         print(f"Failed to execute generated microbenchmarks for {project['name']} project: {str(e)}")
         return
@@ -586,6 +588,8 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
             
             for line in process.stdout:
                 print(line.strip())
+
+            process.wait()
     except Exception as e:
         print(f"Failed to execute project's own jmh for {project['name']} project: {str(e)}")
         return
@@ -610,6 +614,8 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
             
             for line in process.stdout:
                 print(line.strip())
+            
+            process.wait()
     except Exception as e:
         print(f"Failed to generate jacoco report for llm generated microbenchmarks for {project['name']} project: {str(e)}")
         return
@@ -621,6 +627,8 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
             
             for line in process.stdout:
                 print(line.strip())
+            
+            process.wait()
     except Exception as e:
         print(f"Failed to generate jacoco report for project's own jmh for {project['name']} project: {str(e)}")
         return
