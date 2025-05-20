@@ -174,7 +174,7 @@ PROJECTS_INFO = [
         "has_maven": True,
         "has_jmh": True,
         "jmh_path": os.path.join("..", "projects", "logging-log4j2", "log4j-perf-test", "src", "main", "java", "org", "apache", "logging", "log4j", "perf"),
-        "produced_jmh_jar_path": os.path.join("log4j-perf-test", "target"),
+        "project_jmh_jar_path": os.path.join("log4j-perf-test", "target"),
         "jmh_sub_module": "log4j-perf-test",
         "produced_jmh_jar_name": "log4j-perf-test-2.25.0-SNAPSHOT-uber.jar",
         "maven_install_dirs": [
