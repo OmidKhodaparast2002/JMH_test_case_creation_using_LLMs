@@ -167,7 +167,7 @@ PROJECTS_INFO = [
         "ssh_url": "https://github.com/apache/logging-log4j2.git",
         "root_path": os.path.join("..", "projects", "logging-log4j2"),
         "analysis_path": os.path.join("..", "projects", "logging-log4j2", "log4j-core", "src", "main", "java", "org", "apache", "logging", "log4j", "core"),
-        "class_path": os.path.join("log4j-core", "target", "classes", "org"),
+        "class_path": os.path.join("log4j-core", "target", "classes"),
         "source_path": os.path.join("log4j-core", "src", "main", "java"),
         "jmh_root_dir_name": "log4j-perf-test",
         "modules": [],

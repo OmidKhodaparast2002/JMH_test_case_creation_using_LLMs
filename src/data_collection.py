@@ -458,6 +458,7 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
                 text=True,
                 check=True,
             )
+            shutil.rmtree(os.path.join(root_path, project_class_path, "META-INF"))
         except Exception as e:
             print(f"Failed to install {project['name']} project: {str(e)}")
             return
