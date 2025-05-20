@@ -167,7 +167,7 @@ PROJECTS_INFO = [
         "ssh_url": "https://github.com/apache/logging-log4j2.git",
         "root_path": os.path.join("..", "projects", "logging-log4j2"),
         "analysis_path": os.path.join("..", "projects", "logging-log4j2", "log4j-core", "src", "main", "java", "org", "apache", "logging", "log4j", "core"),
-        "class_path": os.path.join("log4j-core", "target", "classes"),
+        "class_path": os.path.join("log4j-core", "target", "classes", "org"),
         "source_path": os.path.join("log4j-core", "src", "main", "java"),
         "jmh_root_dir_name": "log4j-perf-test",
         "modules": [],
@@ -335,6 +335,7 @@ FINAL_DATA_PATH = os.path.join("..", "collected_data")
 FINAL_DATA_RUN_PATH = os.path.join("..", "collected_data", "data_run_")
 NUM_OF_RUNS = 10
 FINAL_DATA_RUN_PATHS = [os.path.join("..", "collected_data", "data_run_" + str(i), "collected") for i in range(1, NUM_OF_RUNS + 1)]
+FINAL_ANALYSIS_PATH = os.path.join("..", "collected_data", "analysis")
 CODE_NOT_GENERATED = "Code not generated"
 INTERFACE_FOUND = "Interface found"
 ABSTRACT_CLASS_FOUND = "Abstract class found"

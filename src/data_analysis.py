@@ -1,6 +1,7 @@
 from typing import Dict, List
 import json
 import os
+import statistics
 
 def find_most_frequent_compile_errors(projects: List[Dict], list_of_compile_errors: List[str]):
 
@@ -30,6 +31,10 @@ def find_most_frequent_compile_errors(projects: List[Dict], list_of_compile_erro
 
     return sorted_compile_errors
 
-def calc_stat_on_data(projects: List[Dict], project_names: List[str]):
-    pass
+def calc_stat_on_data(projects: List[Dict], project_names: List[str], number_of_runs: int):
+    analysed_projects = []
+    
+    for project in projects:
+        project_dict = {}
+        project_dict["name"] = project["name"]
     
