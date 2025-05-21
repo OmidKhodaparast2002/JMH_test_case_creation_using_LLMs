@@ -429,8 +429,8 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
 
     print(f"Collecting coverage for {project['name']} project")
 
-    if project["name"] == "RxJava":
-        project["java_version"] = "17.0.14-tem"
+    if project["name"] == "kafka":
+        project["produced_jmh_jar_name"] = "kafka-jmh-benchmarks-4.1.0-SNAPSHOT-all.jar"
     
     # Activate the Java version for this project
     if "java_version" in project:
