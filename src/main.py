@@ -70,6 +70,7 @@ def main():
 
     if args.file_analysis:
         projects = utils.read_all_data_runs(configs.FINAL_DATA_RUN_PATHS, configs.PROJECT_NAMES, configs.DATA_COMPACT_PATH)
+        data_analysis.calc_stat_on_data(projects, configs.NUM_OF_RUNS, configs.FINAL_ANALYSIS_PATH)
 
 
 if __name__ == "__main__":

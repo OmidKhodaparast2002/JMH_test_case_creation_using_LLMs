@@ -232,7 +232,7 @@ PROJECTS_INFO = [
         "produced_jmh_jar_name": "rxjava-3.0.0-SNAPSHOT-jmh.jar",
         "compile_command": "./gradlew :jmhJar",
         "gradle_settings_path": os.path.join("..", "projects", "RxJava", "settings.gradle"),
-        "java_version": "8.0.442-tem",
+        "java_version": "17.0.14-tem",
         "dependency_list": [
             ":"
         ]
@@ -335,7 +335,7 @@ FINAL_DATA_PATH = os.path.join("..", "collected_data")
 FINAL_DATA_RUN_PATH = os.path.join("..", "collected_data", "data_run_")
 NUM_OF_RUNS = 10
 FINAL_DATA_RUN_PATHS = [os.path.join("..", "collected_data", "data_run_" + str(i), "collected") for i in range(1, NUM_OF_RUNS + 1)]
-FINAL_ANALYSIS_PATH = os.path.join("..", "collected_data", "analysis")
+FINAL_ANALYSIS_PATH = os.path.join("..", "collected_data", "analyzed")
 CODE_NOT_GENERATED = "Code not generated"
 INTERFACE_FOUND = "Interface found"
 ABSTRACT_CLASS_FOUND = "Abstract class found"
