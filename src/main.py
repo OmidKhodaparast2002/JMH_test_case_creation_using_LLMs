@@ -34,6 +34,9 @@ def main():
         data_collection.write_collected_data_in_json(projects, collection_path)
 
     if args.config:
+        for project in projects:
+            if project["name"] == "RxJava":
+                project["java_version"] = "17.0.14-tem"
         clone.clone_projects(configs.PROJECTS_PATH, projects, configs.GENERATED_MICROBENCHMARKS_DIR)
         project_configuration.configure_projects(projects, configs.JMH_POM_TEMPLATE, configs.GENERATED_MICROBENCHMARKS_DIR)
 

@@ -428,6 +428,9 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
     jacoco_cli_path = f"{os.path.expanduser(os.path.join("~", "jacoco", "lib", "jacococli.jar"))}"
 
     print(f"Collecting coverage for {project['name']} project")
+
+    if project["name"] == "RxJava":
+        project["java_version"] = "17.0.14-tem"
     
     # Activate the Java version for this project
     if "java_version" in project:
