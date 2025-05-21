@@ -208,7 +208,7 @@ PROJECTS_INFO = [
         "has_jmh": True,
         "jmh_path": os.path.join("..", "projects", "kafka", "jmh-benchmarks", "src", "main", "java", "org", "apache", "kafka", "jmh"),
         "project_jmh_jar_path": os.path.join("jmh-benchmarks", "build", "libs"),
-        "produced_jmh_jar_name": "kafka-jmh-benchmarks-4.1.0-SANAPSHOT-all.jar",
+        "produced_jmh_jar_name": "kafka-jmh-benchmarks-4.1.0-SNAPSHOT-all.jar",
         "compile_command": "./gradlew :jmh-benchmarks:clean :jmh-benchmarks:shadowJar",
         "gradle_settings_path": os.path.join("..", "projects", "kafka", "settings.gradle"),
         "java_version": "17.0.14-tem",
