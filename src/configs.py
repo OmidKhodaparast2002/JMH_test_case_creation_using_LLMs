@@ -164,13 +164,13 @@ API_KEY = os.getenv("GPT_KEY")
 PROJECTS_INFO = [
     {
         "name": "logging-log4j2",
+        "snap_shot_commit": "ba0ecf8e0641c1ed068e781901a624ae4f5d085a",
         "ssh_url": "https://github.com/apache/logging-log4j2.git",
         "root_path": os.path.join("..", "projects", "logging-log4j2"),
         "analysis_path": os.path.join("..", "projects", "logging-log4j2", "log4j-core", "src", "main", "java", "org", "apache", "logging", "log4j", "core"),
         "class_path": os.path.join("log4j-core", "target", "classes"),
         "source_path": os.path.join("log4j-core", "src", "main", "java"),
         "jmh_root_dir_name": "log4j-perf-test",
-        "modules": [],
         "has_maven": True,
         "has_jmh": True,
         "jmh_path": os.path.join("..", "projects", "logging-log4j2", "log4j-perf-test", "src", "main", "java", "org", "apache", "logging", "log4j", "perf"),
@@ -197,6 +197,7 @@ PROJECTS_INFO = [
     },
     {
         "name": "kafka",
+        "snap_shot_commit": "c16c240bd1fb8c84f89b7b774629ec24016d3866",
         "ssh_url": "https://github.com/apache/kafka.git",
         "root_path": os.path.join("..", "projects", "kafka"),
         "analysis_path": os.path.join("..", "projects", "kafka", "clients", "src", "main", "java", "org", "apache", "kafka"),
@@ -204,7 +205,6 @@ PROJECTS_INFO = [
         "source_path": os.path.join("clients", "src", "main", "java"),
         "jmh_root_dir_name": "jmh-benchmarks",
         "has_maven": False,
-        "modules": [],
         "has_jmh": True,
         "jmh_path": os.path.join("..", "projects", "kafka", "jmh-benchmarks", "src", "main", "java", "org", "apache", "kafka", "jmh"),
         "project_jmh_jar_path": os.path.join("jmh-benchmarks", "build", "libs"),
@@ -218,6 +218,7 @@ PROJECTS_INFO = [
     },
     {
         "name": "RxJava",
+        "snap_shot_commit": "a1b96559f",
         "ssh_url": "https://github.com/ReactiveX/RxJava.git",
         "root_path": os.path.join("..", "projects", "RxJava"),
         "analysis_path": os.path.join("..", "projects", "RxJava", "src", "main", "java", "io", "reactivex", "rxjava3"),
@@ -225,7 +226,6 @@ PROJECTS_INFO = [
         "source_path": os.path.join("src", "main", "java"),
         "jmh_root_dir_name": "src",
         "has_maven": False,
-        "modules": [],
         "has_jmh": True,
         "jmh_path": os.path.join("..", "projects", "RxJava", "src", "jmh", "java", "io", "reactivex", "rxjava3"),
         "project_jmh_jar_path": os.path.join("build", "libs"),
@@ -239,10 +239,10 @@ PROJECTS_INFO = [
     },
     {
         "name": "Java",
+        "snap_shot_commit": "b09766ede4474ca4e1148d46ce2d2705cb2c3ef0",
         "ssh_url": "https://github.com/TheAlgorithms/Java.git",
         "root_path": os.path.join("..", "projects", "Java"),
         "analysis_path": os.path.join("..", "projects", "Java", "src", "main", "java", "com", "thealgorithms"),
-        "modules": [],
         "has_maven": True,
         "has_jmh": False,
         "maven_install_dirs": [
@@ -270,10 +270,10 @@ PROJECTS_INFO = [
     },
     {
         "name": "gson",
+        "snap_shot_commit": "3c9abdeea9afd3a3d7a7f99658455ceb4a994029",
         "ssh_url": "https://github.com/google/gson.git",
         "root_path": os.path.join("..", "projects", "gson"),
         "analysis_path": os.path.join("..", "projects", "gson", "gson", "src", "main", "java", "com", "google", "gson"),
-        "modules": [],
         "has_maven": True,
         "has_jmh": False,
         "maven_install_dirs": [
@@ -301,10 +301,10 @@ PROJECTS_INFO = [
     },
     {
         "name": "jjwt",
+        "snap_shot_commit": "e3fff122a46ad694e40ad2516acdaa87b13f22cf",
         "ssh_url": "https://github.com/jwtk/jjwt.git",
         "root_path": os.path.join("..", "projects", "jjwt"),
         "analysis_path": os.path.join("..", "projects", "jjwt", "impl", "src", "main", "java", "io", "jsonwebtoken", "impl"),
-        "modules": [],
         "has_maven": True,
         "has_jmh": False,
         "maven_install_dirs": [

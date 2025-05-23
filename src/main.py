@@ -29,8 +29,10 @@ def main():
 
     if args.update_projects:
         print("Updating projects...")
+        initial_projects = configs.PROJECTS_INFO
         projects = utils.read_projects(collection_path, configs.PROJECT_NAMES)
-        utils.update_projects_attributes(projects, configs.PROJECTS_INFO)
+        utils.update_projects_attributes(initial_projects, projects)
+        projects = initial_projects
         data_collection.write_collected_data_in_json(projects, collection_path)
 
     if args.config:

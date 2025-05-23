@@ -148,3 +148,58 @@ def read_all_data_runs(paths: List[str], project_names: List[str], output_path: 
         data_collection.write_collected_data_in_json(projects, output_path)
 
     return projects
+
+def keep_first_param_value(java_code: str) -> str:
+    # First handle @Param(value = {...})
+    param_value_pattern = re.compile(
+        r'(@Param\s*\(\s*value\s*=\s*\{\s*)([^}]+)(\s*\}\s*\))',
+        re.DOTALL
+    )
+
+    def value_replacer(match):
+        opening = match.group(1)
+        values = match.group(2)
+        closing = match.group(3)
+        first = re.search(r'"[^"]+"', values)
+        if not first:
+            first = re.search(r'[\w\.\-]+', values)
+        if first:
+            return f"{opening}{first.group(0)}{closing}"
+        else:
+            return match.group(0)
+
+    java_code = param_value_pattern.sub(value_replacer, java_code)
+
+    # Now handle @Param({...})
+    param_pattern = re.compile(
+        r'(@Param\s*\(\s*\{\s*)([^}]+)(\s*\}\s*\))',
+        re.DOTALL
+    )
+
+    def param_replacer(match):
+        opening = match.group(1)
+        values = match.group(2)
+        closing = match.group(3)
+        first = re.search(r'"[^"]+"', values)
+        if not first:
+            first = re.search(r'[\w\.\-]+', values)
+        if first:
+            return f"{opening}{first.group(0)}{closing}"
+        else:
+            return match.group(0)
+
+    java_code = param_pattern.sub(param_replacer, java_code)
+    return java_code
+
+
+def remove_all_paramas_and_keep_one(module_path):
+    try:
+        with open(module_path, "r") as f:
+            java_code = f.read()
+        
+        java_code = keep_first_param_value(java_code)
+
+        with open(module_path, "w") as f:
+            f.write(java_code)
+    except Exception as e:
+        print(f"Failed to read {module_path}: {e}")

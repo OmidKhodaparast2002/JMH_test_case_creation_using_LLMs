@@ -428,9 +428,6 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
     jacoco_cli_path = f"{os.path.expanduser(os.path.join("~", "jacoco", "lib", "jacococli.jar"))}"
 
     print(f"Collecting coverage for {project['name']} project")
-
-    if project["name"] == "kafka":
-        project["produced_jmh_jar_name"] = "kafka-jmh-benchmarks-4.1.0-SNAPSHOT-all.jar"
     
     # Activate the Java version for this project
     if "java_version" in project:
@@ -451,6 +448,7 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
         os.environ["PATH"] = os.path.join(os.environ["JAVA_HOME"], "bin") + ":" + os.environ["PATH"]
 
     # Install all project before moving on
+    print(f"Installing and compiling {project['name']} project")
     if has_maven:
         try: 
             subprocess.run(
@@ -461,7 +459,11 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
                 text=True,
                 check=True,
             )
+            print("Removing META-INF folder")
             shutil.rmtree(os.path.join(root_path, project_class_path, "META-INF"))
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to install {project['name']} project: \n stdout: {str(e.stdout)} \n stderr: {str(e.stderr)}")
+            return
         except Exception as e:
             print(f"Failed to install {project['name']} project: {str(e)}")
             return
@@ -478,6 +480,7 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
             return
         
     # create a jar file containing the class path of the directory we want coverage on
+    print(f"Creating class_path jar file for {project['name']} project")
     try:
         subprocess.run(["bash", "-c", f"jar -cf {project['name']}.jar -C {project_class_path} ."], 
             cwd=root_path, 
@@ -486,7 +489,10 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
             text=True, 
             check=True)
         
-        print(f"Created jar file for {project['name']} project")
+        print(f"Created class_path jar file for {project['name']} project")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install {project['name']} project: \n stdout: {str(e.stdout)} \n stderr: {str(e.stderr)}")
+        return
     except Exception as e:
         print(f"Failed to create jar file for {project['name']} project: {str(e)}")
         return
@@ -498,6 +504,24 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
         print(f"Failed to copy jmh directory for {project['name']} project: {str(e)}")
     
     pick_microbenhmark_suits_for_coverage(project, package_path)
+
+    # Fix params for llm-generated microbenchmarks
+    print("Fixing params for llm-generated microbenchmarks")
+    for root, dirs, files in os.walk(project["microbenchmarks_path"]):
+        for file in files:
+            if file.endswith(".java"):
+                file_path = os.path.join(project["microbenchmarks_path"], file)
+                utils.remove_all_paramas_and_keep_one(file_path)
+    print("Fixed params for llm-generated microbenchmarks")
+
+    # Fix params for human_written microbenchmarks
+    print("Fixing params for human_written microbenchmarks")
+    for root, dirs, files in os.walk(project["jmh_path"]):
+        for file in files:
+            if file.endswith(".java"):
+                file_path = os.path.join(root, file)
+                utils.remove_all_paramas_and_keep_one(file_path)
+    print("Fixed params for human_written microbenchmarks")
 
     # Compile generated micorbenchmarks
     try: 
@@ -522,6 +546,9 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
                 text=True,
                 check=True
             )
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install {project['name']} project: \n stdout: {str(e.stdout)} \n stderr: {str(e.stderr)}")
+        return
     except Exception as e:
         print(f"Failed to compile generated microbenchmarks for {project['name']} project: {str(e)}")
         return
@@ -548,6 +575,9 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
                 text=True,
                 check=True
             )
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install {project['name']} project: \n stdout: {str(e.stdout)} \n stderr: {str(e.stderr)}")
+        return
     except Exception as e:
         print(f"Failed to compile project's own jmh for {project['name']} project: {str(e)}")
         return
@@ -564,8 +594,17 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
             
             for line in process.stdout:
                 print(line.strip())
-            
+
             process.wait()
+            
+            for line in process.stderr:
+                print(line.strip())
+
+            process.wait()
+        
+        if process.returncode != 0:
+            print(f"Failed to execute generated microbenchmarks for {project['name']} project")
+            return
     except Exception as e:
         print(f"Failed to execute generated microbenchmarks for {project['name']} project: {str(e)}")
         return
@@ -579,6 +618,9 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
             stderr=subprocess.PIPE,
             text=True,
             check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install {project['name']} project: \n stdout: {str(e.stdout)} \n stderr: {str(e.stderr)}")
+        return
     except Exception as e:
         print(f"Failed to check generated microbenchmarks for {project['name']} project: {str(e)}")
         return
@@ -594,6 +636,15 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
                 print(line.strip())
 
             process.wait()
+
+            for line in process.stderr:
+                print(line.strip())
+                
+            process.wait()
+        
+        if process.returncode != 0:
+            print(f"Failed to execute generated microbenchmarks for {project['name']} project")
+            return
     except Exception as e:
         print(f"Failed to execute project's own jmh for {project['name']} project: {str(e)}")
         return
@@ -607,6 +658,9 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
             stderr=subprocess.PIPE,
             text=True,
             check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install {project['name']} project: \n stdout: {str(e.stdout)} \n stderr: {str(e.stderr)}")
+        return
     except Exception as e:
         print(f"Failed to check generated microbenchmarks for {project['name']} project: {str(e)}")
         return
@@ -620,6 +674,15 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
                 print(line.strip())
             
             process.wait()
+
+            for line in process.stderr:
+                print(line.strip())
+                
+            process.wait()
+        
+        if process.returncode != 0:
+            print(f"Failed to execute generated microbenchmarks for {project['name']} project")
+            return
     except Exception as e:
         print(f"Failed to generate jacoco report for llm generated microbenchmarks for {project['name']} project: {str(e)}")
         return
@@ -633,6 +696,15 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
                 print(line.strip())
             
             process.wait()
+
+            for line in process.stderr:
+                print(line.strip())
+                
+            process.wait()
+        
+        if process.returncode != 0:
+            print(f"Failed to execute generated microbenchmarks for {project['name']} project")
+            return
     except Exception as e:
         print(f"Failed to generate jacoco report for project's own jmh for {project['name']} project: {str(e)}")
         return
