@@ -211,7 +211,7 @@ PROJECTS_INFO = [
         "produced_jmh_jar_name": "kafka-jmh-benchmarks-4.1.0-SNAPSHOT-all.jar",
         "compile_command": "./gradlew :jmh-benchmarks:clean :jmh-benchmarks:shadowJar",
         "gradle_settings_path": os.path.join("..", "projects", "kafka", "settings.gradle"),
-        "java_version": "17.0.14-tem",
+        "java_version": "8.0.442-tem",
         "dependency_list": [
             ":clients"
         ]
