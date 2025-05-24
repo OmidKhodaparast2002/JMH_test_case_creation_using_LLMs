@@ -401,8 +401,8 @@ def collect_coverage_on_one_project(project, generated_microbenchmarks_dir, pack
     jacoco_exec_save_path_llm = os.path.join("exec", "llm_written", "jacoco-jmh.exec")
     report_os_save_path_llm = os.path.join("..", "data", "coverage", project["name"], "llm")
     report_os_save_path_human = os.path.join("..", "data", "coverage", project["name"], "human")
-    jacoco_report_save_path_llm = os.path.join("..", "..", "data", "collected", "coverage", project["name"], "llm")
-    jacoco_report_save_path_human = os.path.join("..", "..", "data", "collected", "coverage", project["name"], "human")
+    jacoco_report_save_path_llm = os.path.join("..", "..", "data", "coverage", project["name"], "llm")
+    jacoco_report_save_path_human = os.path.join("..", "..", "data", "coverage", project["name"], "human")
 
     project_class_path = project["class_path"]
     project_source_path = project["source_path"]
