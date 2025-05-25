@@ -203,3 +203,10 @@ def remove_all_paramas_and_keep_one(module_path):
             f.write(java_code)
     except Exception as e:
         print(f"Failed to read {module_path}: {e}")
+
+def read_json(path):
+    try:
+        with open(path, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Failed to read {path}: {e}")

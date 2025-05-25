@@ -328,12 +328,19 @@ PROJECTS_INFO = [
 ]
 
 PROJECTS_PATH = os.path.join("..", "projects")
+COVERAGE_GENERAL_SAVE_PATH = "coverage"
+COVERAGE_LLM_SAVE_PATH = "llm"
+COVERAGE_HUMAN_SAVE_PATH = "human"
+COVERAGE_ANALYSIS_PATH = f"{os.path.join('..', 'collected_data', 'coverage_analyzed')}"
+ERRORS_PATH = os.path.join("..", "collected_data", "errors")
+COMPACT_COVERAGE_PATH = os.path.join("..", "collected_data", "coverage")
 DATA_COLLECTION_PATH = os.path.join("..", "data", "collected")
 DATA_ANALYSIS_PATH = os.path.join("..", "data", "analyzed")
 DATA_COMPACT_PATH = os.path.join("..", "collected_data", "compact")
 FINAL_DATA_PATH = os.path.join("..", "collected_data")
 FINAL_DATA_RUN_PATH = os.path.join("..", "collected_data", "data_run_")
 NUM_OF_RUNS = 10
+DATA_RUN_ROOT_PATHS = [os.path.join("..", "collected_data", "data_run_" + str(i)) for i in range(1, NUM_OF_RUNS + 1)]
 FINAL_DATA_RUN_PATHS = [os.path.join("..", "collected_data", "data_run_" + str(i), "collected") for i in range(1, NUM_OF_RUNS + 1)]
 FINAL_ANALYSIS_PATH = os.path.join("..", "collected_data", "analyzed")
 CODE_NOT_GENERATED = "Code not generated"
@@ -342,6 +349,7 @@ ABSTRACT_CLASS_FOUND = "Abstract class found"
 UNKNOWN_ERROR = "Unknown error"
 API_ERROR = "API error"
 PROJECT_NAMES = [project["name"] for project in PROJECTS_INFO]
+PROJECT_NAMES_WITH_JMH = [project["name"] for project in PROJECTS_INFO if project["has_jmh"]]
 MAX_RETRIES = 5
 
 PROMPT_ONE = f"""You are a senior verification developer. You are an expert in

@@ -72,7 +72,12 @@ def main():
 
     if args.file_analysis:
         projects = utils.read_all_data_runs(configs.FINAL_DATA_RUN_PATHS, configs.PROJECT_NAMES, configs.DATA_COMPACT_PATH)
+        # data_analysis.create_files_to_save_coverage_data(configs.PROJECT_NAMES_WITH_JMH, configs.DATA_RUN_ROOT_PATHS, configs.COVERAGE_GENERAL_SAVE_PATH, configs.COVERAGE_LLM_SAVE_PATH, configs.COVERAGE_HUMAN_SAVE_PATH)
         data_analysis.calc_stat_on_data(projects, configs.NUM_OF_RUNS, configs.FINAL_ANALYSIS_PATH)
+        data_analysis.calc_compile_errors_over_runs(projects, configs.NUM_OF_RUNS, configs.LIST_OF_COMPILE_ERRORS, configs.ERRORS_PATH)
+        data_analysis.calc_execution_errors_over_runs(projects, configs.NUM_OF_RUNS, configs.ERRORS_PATH)
+        coverage_analysis = data_analysis.calc_coverage_over_runs(configs.PROJECT_NAMES_WITH_JMH, configs.COVERAGE_ANALYSIS_PATH, configs.DATA_RUN_ROOT_PATHS, configs.COVERAGE_GENERAL_SAVE_PATH, configs.COVERAGE_LLM_SAVE_PATH, configs.COVERAGE_HUMAN_SAVE_PATH)
+        data_analysis.draw_box_plots(coverage_analysis, configs.COVERAGE_ANALYSIS_PATH)
 
 
 if __name__ == "__main__":
